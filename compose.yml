@@ -1,0 +1,102 @@
+name: studmarket
+
+services:
+  auth-db:
+    image: docker.io/library/postgres:16-alpine
+    environment:
+      POSTGRES_USER: studmarket
+      POSTGRES_PASSWORD: studmarket
+      POSTGRES_DB: auth_db
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U studmarket -d auth_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks: [backend]
+
+  listing-db:
+    image: docker.io/library/postgres:16-alpine
+    environment:
+      POSTGRES_USER: studmarket
+      POSTGRES_PASSWORD: studmarket
+      POSTGRES_DB: listing_db
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U studmarket -d listing_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks: [backend]
+
+  chat-db:
+    image: docker.io/library/postgres:16-alpine
+    environment:
+      POSTGRES_USER: studmarket
+      POSTGRES_PASSWORD: studmarket
+      POSTGRES_DB: chat_db
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U studmarket -d chat_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks: [backend]
+
+  auth-service:
+    build: ./backend/auth_service
+    environment:
+      SERVICE_NAME: auth-service
+      DATABASE_URL: postgresql+psycopg://studmarket:studmarket@auth-db:5432/auth_db
+      JWT_SECRET: ${JWT_SECRET:-dev-only-secret-change-me-in-production-0123456789}
+    depends_on:
+      auth-db:
+        condition: service_healthy
+    ports:
+      - "8001:8000"
+    networks: [backend]
+
+  listing-service:
+    build: ./backend/listing_service
+    environment:
+      SERVICE_NAME: listing-service
+      DATABASE_URL: postgresql+psycopg://studmarket:studmarket@listing-db:5432/listing_db
+    depends_on:
+      listing-db:
+        condition: service_healthy
+    ports:
+      - "8002:8000"
+    networks: [backend]
+
+  chat-service:
+    build: ./backend/chat_service
+    environment:
+      SERVICE_NAME: chat-service
+      DATABASE_URL: postgresql+psycopg://studmarket:studmarket@chat-db:5432/chat_db
+    depends_on:
+      chat-db:
+        condition: service_healthy
+    ports:
+      - "8003:8000"
+    networks: [backend]
+
+  api-gateway:
+    build: ./backend/api_gateway
+    environment:
+      SERVICE_NAME: api-gateway
+      AUTH_SERVICE_URL: http://auth-service:8000
+      CORS_ORIGINS: http://localhost:5173,http://127.0.0.1:5173
+    ports:
+      - "8000:8000"
+    networks: [backend]
+
+  frontend:
+    build: ./frontend
+    environment:
+      VITE_API_URL: http://localhost:8000
+    depends_on:
+      - api-gateway
+    ports:
+      - "5173:5173"
+    networks: [backend]
+
+networks:
+  backend:
+    driver: bridge
