@@ -172,6 +172,11 @@ describe('ListingDetailPage', () => {
         body: makeListing({ seller_id: 'some-other-user' }),
       },
       'POST /chat/conversations': { status: 201, body: conversation },
+      'GET /chat/conversations/conv-1': { status: 200, body: conversation },
+      'GET /auth/users/some-other-user': {
+        status: 200,
+        body: { id: 'some-other-user', username: 'bob' },
+      },
       'GET /chat/conversations/conv-1/messages': { status: 200, body: [] },
     })
     renderDetailPage()

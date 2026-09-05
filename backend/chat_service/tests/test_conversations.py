@@ -253,3 +253,49 @@ def test_list_conversations_title_is_none_when_listing_unavailable(
 
     assert response.status_code == 200
     assert response.json()[0]["listing_title"] is None
+
+
+def test_get_conversation_returns_conversation_for_owner(
+    client: TestClient, db_session
+) -> None:
+    conversation_id = uuid.uuid4()
+    _seed_conversation(db_session, conversation_id, LISTING_ID, BUYER_ID, SELLER_ID)
+    _auth(client, SELLER_ID)
+
+    response = client.get(f"/conversations/{conversation_id}")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["id"] == str(conversation_id)
+    assert body["buyer_id"] == str(BUYER_ID)
+    assert body["seller_id"] == str(SELLER_ID)
+    assert body["listing_id"] == str(LISTING_ID)
+
+
+def test_get_conversation_requires_auth(client: TestClient, db_session) -> None:
+    conversation_id = uuid.uuid4()
+    _seed_conversation(db_session, conversation_id, LISTING_ID, BUYER_ID, SELLER_ID)
+
+    response = client.get(f"/conversations/{conversation_id}")
+
+    assert response.status_code == 401
+
+
+def test_get_conversation_forbidden_for_outsider(
+    client: TestClient, db_session
+) -> None:
+    conversation_id = uuid.uuid4()
+    _seed_conversation(db_session, conversation_id, LISTING_ID, BUYER_ID, SELLER_ID)
+    _auth(client, OTHER_USER_ID)
+
+    response = client.get(f"/conversations/{conversation_id}")
+
+    assert response.status_code == 403
+
+
+def test_get_conversation_404_when_missing(client: TestClient) -> None:
+    _auth(client, BUYER_ID)
+
+    response = client.get(f"/conversations/{uuid.uuid4()}")
+
+    assert response.status_code == 404

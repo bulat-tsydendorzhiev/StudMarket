@@ -36,6 +36,11 @@ async def list_conversations(request: Request) -> JSONResponse:
     return await _proxy("GET", "/conversations", request)
 
 
+@router.get("/conversations/{conversation_id}")
+async def get_conversation(conversation_id: str, request: Request) -> JSONResponse:
+    return await _proxy("GET", f"/conversations/{conversation_id}", request)
+
+
 @router.get("/conversations/{conversation_id}/messages")
 async def list_messages(conversation_id: str, request: Request) -> JSONResponse:
     return await _proxy("GET", f"/conversations/{conversation_id}/messages", request)

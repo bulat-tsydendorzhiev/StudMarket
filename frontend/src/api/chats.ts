@@ -33,6 +33,8 @@ export const chatsApi = {
     apiClient.post<Conversation>('/chat/conversations', { listing_id: listingId }),
   listConversations: () =>
     apiClient.get<ConversationListItem[]>('/chat/conversations'),
+  getConversation: (conversationId: string) =>
+    apiClient.get<Conversation>(`/chat/conversations/${conversationId}`),
   listMessages: (conversationId: string) =>
     apiClient.get<Message[]>(`/chat/conversations/${conversationId}/messages`),
   sendMessage: (conversationId: string, text: string) =>

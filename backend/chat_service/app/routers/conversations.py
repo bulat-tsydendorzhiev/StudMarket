@@ -149,3 +149,32 @@ def list_conversations(
         )
         for conversation in conversations
     ]
+
+
+def _get_participant_conversation(
+    db: Session, conversation_id: uuid.UUID, user_id: uuid.UUID
+) -> Conversation:
+    conversation = db.scalar(
+        select(Conversation).where(Conversation.id == conversation_id)
+    )
+    if conversation is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Чат не найден",
+        )
+    if user_id not in (conversation.buyer_id, conversation.seller_id):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Доступ запрещён",
+        )
+    return conversation
+
+
+@router.get("/{conversation_id}", response_model=ConversationResponse)
+def get_conversation(
+    conversation_id: uuid.UUID,
+    request: Request,
+    db: Session = Depends(get_db),
+) -> Conversation:
+    user_id = _get_current_user_id(request)
+    return _get_participant_conversation(db, conversation_id, user_id)
