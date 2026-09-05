@@ -12,6 +12,7 @@ interface AuthContextValue {
   user: CurrentUser | null
   isLoading: boolean
   isAuthenticated: boolean
+  authenticate: (user: CurrentUser) => void
   logout: () => Promise<void>
 }
 
@@ -39,6 +40,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const user = data ?? null
 
+  const authenticate = (authenticatedUser: CurrentUser) => {
+    queryClient.setQueryData(ME_QUERY_KEY, authenticatedUser)
+  }
+
   const logout = async () => {
     try {
       await apiClient.post('/auth/logout')
@@ -50,7 +55,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, isLoading, isAuthenticated: user !== null, logout }}
+      value={{ user, isLoading, isAuthenticated: user !== null, authenticate, logout }}
     >
       {children}
     </AuthContext.Provider>

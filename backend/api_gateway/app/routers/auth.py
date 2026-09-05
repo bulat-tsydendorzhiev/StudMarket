@@ -22,7 +22,11 @@ async def register(request: Request) -> JSONResponse:
         raise HTTPException(status_code=502, detail="Auth service unavailable")
 
     content = response.json() if response.content else None
-    return JSONResponse(status_code=response.status_code, content=content)
+    headers = {}
+    set_cookie = response.headers.get("set-cookie")
+    if set_cookie:
+        headers["set-cookie"] = set_cookie
+    return JSONResponse(status_code=response.status_code, content=content, headers=headers)
 
 
 @router.post("/login")

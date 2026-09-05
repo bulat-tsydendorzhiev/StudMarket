@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { apiClient, ApiError } from '../api/client'
+import { useAuth, type CurrentUser } from '../auth/AuthContext'
 
 interface FieldErrors {
   username?: string
@@ -27,6 +28,7 @@ function extractFieldErrors(detail: unknown): FieldErrors {
 
 export default function RegisterPage() {
   const navigate = useNavigate()
+  const { authenticate } = useAuth()
 
   const [username, setUsername] = useState('')
   const [email, setEmail] = useState('')
@@ -48,13 +50,14 @@ export default function RegisterPage() {
 
     setSubmitting(true)
     try {
-      await apiClient.post('/auth/register', {
+      const user = await apiClient.post<CurrentUser>('/auth/register', {
         username,
         email,
         password,
         password_confirmation: passwordConfirmation,
       })
-      navigate('/login')
+      authenticate(user)
+      navigate('/')
     } catch (error) {
       if (error instanceof ApiError) {
         try {

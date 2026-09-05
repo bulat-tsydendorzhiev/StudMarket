@@ -1,6 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { act } from 'react'
-import { render, screen } from '@testing-library/react'
+import { render, screen, fireEvent } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import App from './App'
 
@@ -172,5 +172,67 @@ describe('App', () => {
 
     expect(await screen.findByRole('link', { name: 'Войти' })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Выйти' })).not.toBeInTheDocument()
+  })
+
+  it('shows the authenticated UI on the home page after login', async () => {
+    stubFetch({
+      ...guestRoutes(),
+      'POST /auth/login': {
+        status: 200,
+        body: { id: 'uuid-1', username: 'alice', email: 'alice@example.com' },
+      },
+    })
+    window.history.pushState({}, '', '/login')
+    renderApp()
+
+    await screen.findByRole('heading', { name: 'Вход' })
+    fireEvent.change(screen.getByLabelText('Имя пользователя или email'), {
+      target: { value: 'alice' },
+    })
+    fireEvent.change(screen.getByLabelText('Пароль'), {
+      target: { value: 'secret123' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Войти' }))
+
+    expect(await screen.findByRole('heading', { name: 'StudMarket' })).toBeInTheDocument()
+    expect(await screen.findByText('alice')).toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'Войти' })).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('link', { name: 'Зарегистрироваться' }),
+    ).not.toBeInTheDocument()
+  })
+
+  it('shows the authenticated UI on the home page after registration', async () => {
+    stubFetch({
+      ...guestRoutes(),
+      'POST /auth/register': {
+        status: 201,
+        body: { id: 'uuid-1', username: 'alice', email: 'alice@example.com' },
+      },
+    })
+    window.history.pushState({}, '', '/register')
+    renderApp()
+
+    await screen.findByRole('heading', { name: 'Регистрация' })
+    fireEvent.change(screen.getByLabelText('Имя пользователя'), {
+      target: { value: 'alice' },
+    })
+    fireEvent.change(screen.getByLabelText('Email'), {
+      target: { value: 'alice@example.com' },
+    })
+    fireEvent.change(screen.getByLabelText('Пароль'), {
+      target: { value: 'secret123' },
+    })
+    fireEvent.change(screen.getByLabelText('Подтверждение пароля'), {
+      target: { value: 'secret123' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Создать аккаунт' }))
+
+    expect(await screen.findByRole('heading', { name: 'StudMarket' })).toBeInTheDocument()
+    expect(await screen.findByText('alice')).toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'Войти' })).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('link', { name: 'Зарегистрироваться' }),
+    ).not.toBeInTheDocument()
   })
 })

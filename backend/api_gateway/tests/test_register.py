@@ -84,3 +84,24 @@ def test_register_hits_auth_service_endpoint() -> None:
     assert response.status_code == 201
     assert upstream.url.endswith("/auth/register")
     assert "auth-service" in upstream.url
+
+
+def test_register_forwards_set_cookie() -> None:
+    payload = {
+        "username": "alice",
+        "email": "alice@example.com",
+        "password": "secret123",
+        "password_confirmation": "secret123",
+    }
+    set_cookie = "access_token=abc; HttpOnly; Path=/; Max-Age=86400"
+    response, _ = _run_with_handler(
+        lambda _: httpx.Response(
+            201,
+            json={"id": "uuid-1", "username": "alice", "email": "alice@example.com"},
+            headers={"set-cookie": set_cookie},
+        ),
+        payload,
+    )
+
+    assert response.status_code == 201
+    assert response.headers.get("set-cookie") == set_cookie

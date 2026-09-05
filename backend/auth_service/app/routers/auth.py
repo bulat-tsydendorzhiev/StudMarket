@@ -44,12 +44,28 @@ def _get_current_user(request: Request, db: Session) -> User:
     return user
 
 
+def _set_auth_cookie(response: Response, user: User) -> None:
+    token = create_access_token(str(user.id))
+    response.set_cookie(
+        key=settings.jwt_cookie_name,
+        value=token,
+        httponly=True,
+        samesite="lax",
+        max_age=settings.jwt_access_token_minutes * 60,
+        path="/",
+    )
+
+
 @router.post(
     "/register",
     response_model=RegisterResponse,
     status_code=status.HTTP_201_CREATED,
 )
-def register(payload: RegisterRequest, db: Session = Depends(get_db)) -> User:
+def register(
+    payload: RegisterRequest,
+    response: Response,
+    db: Session = Depends(get_db),
+) -> User:
     username = payload.username
     email = payload.email
 
@@ -78,6 +94,7 @@ def register(payload: RegisterRequest, db: Session = Depends(get_db)) -> User:
             detail="Имя пользователя или email уже заняты",
         )
     db.refresh(user)
+    _set_auth_cookie(response, user)
     return user
 
 
@@ -103,15 +120,7 @@ def login(payload: LoginRequest, response: Response, db: Session = Depends(get_d
             detail="Неверное имя пользователя или пароль",
         )
 
-    token = create_access_token(str(user.id))
-    response.set_cookie(
-        key=settings.jwt_cookie_name,
-        value=token,
-        httponly=True,
-        samesite="lax",
-        max_age=settings.jwt_access_token_minutes * 60,
-        path="/",
-    )
+    _set_auth_cookie(response, user)
     return user
 
 

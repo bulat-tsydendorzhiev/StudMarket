@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { apiClient, ApiError } from '../api/client'
+import { useAuth, type CurrentUser } from '../auth/AuthContext'
 
 interface FieldErrors {
   username_or_email?: string
@@ -25,6 +26,7 @@ function extractFieldErrors(detail: unknown): FieldErrors {
 
 export default function LoginPage() {
   const navigate = useNavigate()
+  const { authenticate } = useAuth()
 
   const [usernameOrEmail, setUsernameOrEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -39,10 +41,11 @@ export default function LoginPage() {
     setSubmitting(true)
 
     try {
-      await apiClient.post('/auth/login', {
+      const user = await apiClient.post<CurrentUser>('/auth/login', {
         username_or_email: usernameOrEmail,
         password,
       })
+      authenticate(user)
       navigate('/')
     } catch (error) {
       if (error instanceof ApiError) {
