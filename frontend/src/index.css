@@ -21,6 +21,7 @@ body {
 .home__header {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   padding: 16px 32px;
   background: #fff;
   border-bottom: 1px solid #e3e6ea;
@@ -30,6 +31,47 @@ body {
   font-weight: 700;
   font-size: 18px;
   color: #1a5cff;
+}
+
+.home__nav {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.home__username {
+  font-weight: 600;
+  color: #333;
+}
+
+.home__link {
+  color: #1a5cff;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.home__link--primary {
+  color: #fff;
+  background: #1a5cff;
+  padding: 8px 16px;
+  border-radius: 8px;
+}
+
+.home__button {
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #c62828;
+  background: transparent;
+  border: 1px solid #e3e6ea;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.home__button:disabled {
+  opacity: 0.6;
+  cursor: default;
 }
 
 .home__main {

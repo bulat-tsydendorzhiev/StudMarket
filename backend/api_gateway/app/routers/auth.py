@@ -45,3 +45,33 @@ async def login(request: Request) -> JSONResponse:
     if set_cookie:
         headers["set-cookie"] = set_cookie
     return JSONResponse(status_code=response.status_code, content=content, headers=headers)
+
+
+@router.get("/me")
+async def me(request: Request) -> JSONResponse:
+    url = f"{settings.auth_service_url}/auth/me"
+    try:
+        async with httpx.AsyncClient(timeout=10) as client:
+            response = await client.get(url, cookies=request.cookies)
+    except httpx.HTTPError:
+        raise HTTPException(status_code=502, detail="Auth service unavailable")
+
+    content = response.json() if response.content else None
+    return JSONResponse(status_code=response.status_code, content=content)
+
+
+@router.post("/logout")
+async def logout(request: Request) -> JSONResponse:
+    url = f"{settings.auth_service_url}/auth/logout"
+    try:
+        async with httpx.AsyncClient(timeout=10) as client:
+            response = await client.post(url, cookies=request.cookies)
+    except httpx.HTTPError:
+        raise HTTPException(status_code=502, detail="Auth service unavailable")
+
+    content = response.json() if response.content else None
+    headers = {}
+    set_cookie = response.headers.get("set-cookie")
+    if set_cookie:
+        headers["set-cookie"] = set_cookie
+    return JSONResponse(status_code=response.status_code, content=content, headers=headers)
