@@ -42,6 +42,7 @@ function guestRoutes(): MockRoutes {
   return {
     'GET /auth/me': { status: 401, body: { detail: 'Не авторизован' } },
     'GET /health': { status: 200, body: { status: 'ok', service: 'api-gateway' } },
+    'GET /listings': { status: 200, body: [] },
     'POST /auth/logout': { status: 204 },
   }
 }
@@ -53,6 +54,7 @@ function authenticatedRoutes(): MockRoutes {
       body: { id: 'uuid-1', username: 'alice', email: 'alice@example.com' },
     },
     'GET /health': { status: 200, body: { status: 'ok', service: 'api-gateway' } },
+    'GET /listings': { status: 200, body: [] },
     'POST /auth/logout': { status: 204 },
   }
 }
@@ -81,12 +83,39 @@ afterEach(() => {
 })
 
 describe('App', () => {
-  it('renders the home page and shows gateway health status on "/"', async () => {
+  it('renders the home page on "/" with the listings state', async () => {
     window.history.pushState({}, '', '/')
     renderApp()
 
     expect(screen.getByRole('heading', { name: 'StudMarket' })).toBeInTheDocument()
-    expect(await screen.findByText('API работает (api-gateway)')).toBeInTheDocument()
+    expect(await screen.findByText('Объявлений пока нет')).toBeInTheDocument()
+  })
+
+  it('renders listing cards on the home page', async () => {
+    stubFetch({
+      ...guestRoutes(),
+      'GET /listings': {
+        status: 200,
+        body: [
+          {
+            id: 'listing-1',
+            seller_id: 'uuid-1',
+            title: 'Велосипед',
+            description: 'Почти новый',
+            price: 1500,
+            status: 'active',
+            created_at: '2026-09-05T00:00:00Z',
+            updated_at: '2026-09-05T00:00:00Z',
+            expires_at: null,
+          },
+        ],
+      },
+    })
+    window.history.pushState({}, '', '/')
+    renderApp()
+
+    expect(await screen.findByText('Велосипед')).toBeInTheDocument()
+    expect(screen.getByText('1500 ₽')).toBeInTheDocument()
   })
 
   it('renders the not found page for unknown routes', () => {
@@ -115,7 +144,7 @@ describe('App', () => {
     window.history.pushState({}, '', '/')
     renderApp()
 
-    await screen.findByText('API работает (api-gateway)')
+    await screen.findByText('Объявлений пока нет')
     await screen.findByRole('link', { name: 'Войти' })
 
     expect(
@@ -158,6 +187,9 @@ describe('App', () => {
 
     expect(await screen.findByText('alice')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Выйти' })).toBeInTheDocument()
+    expect(
+      screen.getByRole('link', { name: 'Разместить объявление' }),
+    ).toBeInTheDocument()
   })
 
   it('logs out and switches back to guest UI', async () => {
@@ -172,6 +204,14 @@ describe('App', () => {
 
     expect(await screen.findByRole('link', { name: 'Войти' })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Выйти' })).not.toBeInTheDocument()
+  })
+
+  it('redirects guests away from "/listings/new" to "/login"', async () => {
+    stubFetch(guestRoutes())
+    window.history.pushState({}, '', '/listings/new')
+    renderApp()
+
+    expect(await screen.findByRole('heading', { name: 'Вход' })).toBeInTheDocument()
   })
 
   it('shows the authenticated UI on the home page after login', async () => {

@@ -5,6 +5,7 @@ class Settings(BaseSettings):
     service_name: str = "api-gateway"
     cors_origins: str = "http://localhost:5173"
     auth_service_url: str = "http://auth-service:8000"
+    listing_service_url: str = "http://listing-service:8000"
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
