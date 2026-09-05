@@ -74,6 +74,20 @@ describe('ListingDetailPage', () => {
     expect(screen.getByText('Бесплатно')).toBeInTheDocument()
   })
 
+  it('shows the tags of the listing', async () => {
+    stubFetch({
+      ...guestAuthRoutes(),
+      'GET /listings/listing-1': {
+        status: 200,
+        body: makeListing({ tags: ['Электроника', 'Общежитие №3'] }),
+      },
+    })
+    renderDetailPage()
+
+    expect(await screen.findByText('Электроника')).toBeInTheDocument()
+    expect(screen.getByText('Общежитие №3')).toBeInTheDocument()
+  })
+
   it('shows edit and delete controls for the owner', async () => {
     stubFetch({
       ...authenticatedAuthRoutes(),

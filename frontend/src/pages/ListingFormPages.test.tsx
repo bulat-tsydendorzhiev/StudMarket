@@ -9,6 +9,7 @@ import {
   makeListing,
   renderWithProviders,
   stubFetch,
+  tagsRoutes,
 } from '../testHelpers'
 
 function renderNewPage() {
@@ -77,7 +78,12 @@ describe('ListingNewPage', () => {
       String(input).endsWith('/listings'),
     )
     const body = JSON.parse(createCall?.[1]?.body as string) as Record<string, unknown>
-    expect(body).toEqual({ title: 'Велосипед', description: 'Почти новый', price: 1500 })
+    expect(body).toEqual({
+      title: 'Велосипед',
+      description: 'Почти новый',
+      price: 1500,
+      tags: [],
+    })
   })
 
   it('creates a free listing when the price is left empty', async () => {
@@ -99,7 +105,7 @@ describe('ListingNewPage', () => {
       String(input).endsWith('/listings'),
     )
     const body = JSON.parse(createCall?.[1]?.body as string) as Record<string, unknown>
-    expect(body).toEqual({ title: 'Велосипед', description: 'Почти новый', price: 0 })
+    expect(body).toEqual({ title: 'Велосипед', description: 'Почти новый', price: 0, tags: [] })
   })
 
   it('inserts Markdown formatting from the toolbar', () => {
@@ -158,6 +164,44 @@ describe('ListingNewPage', () => {
       await screen.findByText('Не удалось создать объявление'),
     ).toBeInTheDocument()
   })
+
+  it('renders tag checkboxes from the tag list', async () => {
+    stubFetch({ ...guestAuthRoutes(), ...tagsRoutes() })
+    renderNewPage()
+
+    expect(await screen.findByLabelText('Электроника')).toBeInTheDocument()
+    expect(screen.getByLabelText('Общежитие №2')).toBeInTheDocument()
+  })
+
+  it('submits the selected tags with the listing', async () => {
+    const fetchMock = stubFetch({
+      ...guestAuthRoutes(),
+      ...tagsRoutes(),
+      'POST /listings': {
+        status: 201,
+        body: makeListing({ id: 'listing-new' }),
+      },
+    })
+    renderNewPage()
+
+    fireEvent.click(await screen.findByLabelText('Электроника'))
+    fireEvent.click(screen.getByLabelText('Общежитие №3'))
+    fillForm()
+    fireEvent.click(screen.getByRole('button', { name: 'Создать объявление' }))
+
+    expect(await screen.findByText('Listing Page')).toBeInTheDocument()
+
+    const createCall = fetchMock.mock.calls.find(([input]) =>
+      String(input).endsWith('/listings'),
+    )
+    const body = JSON.parse(createCall?.[1]?.body as string) as Record<string, unknown>
+    expect(body).toEqual({
+      title: 'Велосипед',
+      description: 'Почти новый',
+      price: 1500,
+      tags: ['Электроника', 'Общежитие №3'],
+    })
+  })
 })
 
 describe('ListingEditPage', () => {
@@ -201,7 +245,33 @@ describe('ListingEditPage', () => {
       String(input).endsWith('/listings/listing-1') && (init?.method ?? 'GET') === 'PATCH',
     )
     const body = JSON.parse(updateCall?.[1]?.body as string) as Record<string, unknown>
-    expect(body).toEqual({ title: 'Новый велосипед', description: 'Почти новый', price: 2000 })
+    expect(body).toEqual({
+      title: 'Новый велосипед',
+      description: 'Почти новый',
+      price: 2000,
+      tags: [],
+    })
+  })
+
+  it('prefills the selected tags when editing', async () => {
+    stubFetch({
+      ...guestAuthRoutes(),
+      ...tagsRoutes(),
+      'GET /listings/listing-1': {
+        status: 200,
+        body: makeListing({ tags: ['Электроника', 'Общежитие №2'] }),
+      },
+    })
+    renderEditPage()
+
+    expect(
+      await screen.findByRole('heading', { name: 'Редактирование объявления' }),
+    ).toBeInTheDocument()
+    const electronics = await screen.findByLabelText('Электроника')
+    const dorm = screen.getByLabelText('Общежитие №2')
+    expect(electronics).toBeChecked()
+    expect(dorm).toBeChecked()
+    expect(screen.getByLabelText('Спорт')).not.toBeChecked()
   })
 
   it('shows an error when the listing fails to load', async () => {

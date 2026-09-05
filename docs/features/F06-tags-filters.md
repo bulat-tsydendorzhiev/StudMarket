@@ -19,7 +19,7 @@ Tags are predefined.
 
 Users cannot create tags.
 
-Example tags:
+There should be only these tags:
 
 ```text
 Электроника
@@ -29,8 +29,23 @@ Example tags:
 Учеба
 Спорт
 Другое
-Общежитие №1
+
 Общежитие №2
+Общежитие №3
+Общежитие №4
+Общежитие №5
+Общежитие №6
+Общежитие №7
+Общежитие №8
+Общежитие №9
+Общежитие №10
+Общежитие №11
+Общежитие №12
+Общежитие №13
+Общежитие №14
+Общежитие №15
+Общежитие №16
+Город
 ```
 
 Dormitories are ordinary tags.
@@ -38,12 +53,6 @@ Dormitories are ordinary tags.
 Do not create a separate `dormitories` table.
 
 ## Backend
-
-Implement:
-
-```text
-GET /tags
-```
 
 Allow tags to be assigned to listings.
 
@@ -62,6 +71,8 @@ Support selecting multiple tags.
 Add tags to the listing creation/edit form.
 
 Add a left-side filter panel on the home page.
+
+You should separate dormitories from other tags.
 
 Example:
 

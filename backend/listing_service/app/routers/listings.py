@@ -1,15 +1,16 @@
 import uuid
 
 import jwt
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from ..config import settings
 from ..database import get_db
-from ..models import Listing
-from ..schemas import ListingCreate, ListingResponse, ListingUpdate
+from ..models import Listing, Tag
+from ..schemas import ListingCreate, ListingResponse, ListingUpdate, TagResponse
 from ..security import decode_access_token
+from ..tags import sort_tags
 
 router = APIRouter(prefix="/listings", tags=["listings"])
 
@@ -49,6 +50,26 @@ def _ensure_owner(listing: Listing, user_id: uuid.UUID) -> None:
         )
 
 
+def _resolve_tags(tag_names: list[str], db: Session) -> list[Tag]:
+    if not tag_names:
+        return []
+    tags = db.scalars(select(Tag).where(Tag.name.in_(tag_names))).all()
+    by_name = {tag.name: tag for tag in tags}
+    unknown = [name for name in tag_names if name not in by_name]
+    if unknown:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail=f"Неизвестные теги: {', '.join(unknown)}",
+        )
+    return [by_name[name] for name in tag_names]
+
+
+@router.get("/tags", response_model=list[TagResponse])
+def list_tags(db: Session = Depends(get_db)) -> list[Tag]:
+    tags = db.scalars(select(Tag)).all()
+    return sort_tags(list(tags))
+
+
 @router.post("", response_model=ListingResponse, status_code=status.HTTP_201_CREATED)
 def create_listing(
     payload: ListingCreate,
@@ -63,16 +84,23 @@ def create_listing(
         price=0.0 if payload.price is None else payload.price,
     )
     db.add(listing)
+    db.flush()
+    listing.tags = _resolve_tags(payload.tags, db)
     db.commit()
     db.refresh(listing)
     return listing
 
 
 @router.get("", response_model=list[ListingResponse])
-def list_listings(db: Session = Depends(get_db)) -> list[Listing]:
-    listings = db.scalars(
-        select(Listing).order_by(Listing.created_at.desc(), Listing.id.desc())
-    ).all()
+def list_listings(
+    tags: list[str] = Query(default=[]),
+    db: Session = Depends(get_db),
+) -> list[Listing]:
+    statement = select(Listing)
+    for tag_name in tags:
+        statement = statement.where(Listing.tags.any(Tag.name == tag_name.strip()))
+    statement = statement.order_by(Listing.created_at.desc(), Listing.id.desc())
+    listings = db.scalars(statement).all()
     return list(listings)
 
 
@@ -98,8 +126,11 @@ def update_listing(
     update_data = payload.model_dump(exclude_unset=True)
     if update_data.get("price") is None and "price" in update_data:
         update_data["price"] = 0.0
+    tag_names = update_data.pop("tags", None)
     for field, value in update_data.items():
         setattr(listing, field, value)
+    if tag_names is not None:
+        listing.tags = _resolve_tags(tag_names, db)
     db.commit()
     db.refresh(listing)
     return listing

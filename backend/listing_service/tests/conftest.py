@@ -6,6 +6,7 @@ from sqlalchemy.pool import StaticPool
 
 from app.database import Base, get_db
 from app.main import app
+from app.tags import seed_default_tags
 
 
 @pytest.fixture()
@@ -18,6 +19,7 @@ def db_session():
     testing_session_local = sessionmaker(autocommit=False, autoflush=False, bind=engine)
     Base.metadata.create_all(bind=engine)
     session = testing_session_local()
+    seed_default_tags(session)
     try:
         yield session
     finally:

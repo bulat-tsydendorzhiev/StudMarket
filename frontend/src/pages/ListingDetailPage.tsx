@@ -50,6 +50,16 @@ export default function ListingDetailPage() {
         <h1 className="listing-detail__title">{listing.title}</h1>
         <p className="listing-detail__price">{formatPrice(listing.price)}</p>
 
+        {listing.tags.length > 0 && (
+          <div className="listing-detail__tags">
+            {listing.tags.map((tag) => (
+              <span className="listing-tag" key={tag}>
+                {tag}
+              </span>
+            ))}
+          </div>
+        )}
+
         <section className="listing-detail__block">
           <h2 className="listing-detail__heading">Описание</h2>
           <div className="listing-detail__description markdown">

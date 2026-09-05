@@ -1,4 +1,5 @@
 from unittest.mock import patch
+from urllib.parse import parse_qs, urlsplit
 
 import httpx
 from fastapi.testclient import TestClient
@@ -146,6 +147,51 @@ def test_listings_passes_through_upstream_error() -> None:
 
     assert response.status_code == 404
     assert response.json() == error_body
+
+
+def test_listings_forwards_query_params() -> None:
+    tags_body = [
+        {
+            "id": "uuid-1",
+            "seller_id": "uuid-seller",
+            "title": "Ноутбук",
+            "description": "Почти новый",
+            "price": 5000.0,
+            "status": "active",
+            "created_at": "2026-09-05T00:00:00Z",
+            "updated_at": "2026-09-05T00:00:00Z",
+            "expires_at": None,
+            "tags": ["Электроника"],
+        }
+    ]
+    response, upstream = _run_with_handler(
+        lambda _: httpx.Response(200, json=tags_body),
+        "GET",
+        "/listings?tags=Электроника",
+    )
+
+    assert response.status_code == 200
+    parts = urlsplit(upstream.url)
+    assert parts.path.endswith("/listings")
+    assert parse_qs(parts.query)["tags"] == ["Электроника"]
+    assert "listing-service" in upstream.url
+
+
+def test_tags_endpoint_proxies_to_listing_service() -> None:
+    tags_body = [
+        {"id": "uuid-tag-1", "name": "Электроника"},
+        {"id": "uuid-tag-2", "name": "Общежитие №2"},
+    ]
+    response, upstream = _run_with_handler(
+        lambda _: httpx.Response(200, json=tags_body),
+        "GET",
+        "/listings/tags",
+    )
+
+    assert response.status_code == 200
+    assert response.json() == tags_body
+    assert upstream.url.endswith("/listings/tags")
+    assert "listing-service" in upstream.url
 
 
 def test_listings_returns_502_when_listing_unavailable() -> None:

@@ -79,7 +79,6 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
   padding: 24px;
   text-align: center;
 }
@@ -92,6 +91,50 @@ body {
 .home__subtitle {
   margin: 8px 0 0;
   color: #666;
+}
+
+.home__content {
+  width: 100%;
+  max-width: 1180px;
+  margin-top: 32px;
+  display: flex;
+  align-items: flex-start;
+  gap: 24px;
+  text-align: left;
+}
+
+.filters {
+  flex-shrink: 0;
+  width: 240px;
+  padding: 20px;
+  background: #fff;
+  border: 1px solid #e3e6ea;
+  border-radius: 12px;
+}
+
+.filters__title {
+  margin: 0 0 8px;
+  font-size: 16px;
+}
+
+.filters__group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 0;
+}
+
+.filters__group + .filters__group {
+  border-top: 1px solid #e3e6ea;
+}
+
+.filters__item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: #333;
+  cursor: pointer;
 }
 
 .home__status {
@@ -228,9 +271,8 @@ body {
 }
 
 .listings {
-  width: 100%;
-  max-width: 1080px;
-  margin-top: 32px;
+  flex: 1;
+  min-width: 0;
 }
 
 .listings__status {
@@ -288,6 +330,12 @@ body {
 .listing-card__title {
   font-size: 15px;
   font-weight: 600;
+}
+
+.listing-card__tags {
+  margin-top: 4px;
+  font-size: 13px;
+  color: #1a5cff;
 }
 
 .listing-page {
@@ -393,6 +441,34 @@ body {
   cursor: default;
 }
 
+.listing-form__tags {
+  padding: 0;
+  margin: 0;
+  border: none;
+}
+
+.listing-form__tags legend {
+  padding: 0;
+  margin-bottom: 6px;
+  font-size: 14px;
+  color: #333;
+}
+
+.listing-form__tag-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+}
+
+.listing-form__tag {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  color: #333;
+  cursor: pointer;
+}
+
 .listing-detail {
   min-height: 100vh;
   display: flex;
@@ -433,6 +509,21 @@ body {
   margin: 0 0 24px;
   font-size: 24px;
   font-weight: 700;
+}
+
+.listing-detail__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 24px;
+}
+
+.listing-tag {
+  padding: 4px 10px;
+  font-size: 13px;
+  color: #1a5cff;
+  background: #eef1f5;
+  border-radius: 999px;
 }
 
 .listing-detail__block {
