@@ -1,6 +1,7 @@
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import ReactMarkdown from 'react-markdown'
+import { chatsApi } from '../api/chats'
 import { listingsApi } from '../api/listings'
 import { useAuth } from '../auth/AuthContext'
 import { formatPrice } from './HomePage'
@@ -8,7 +9,7 @@ import { formatPrice } from './HomePage'
 export default function ListingDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const { user } = useAuth()
+  const { user, isAuthenticated } = useAuth()
 
   const { data: listing, isLoading, isError } = useQuery({
     queryKey: ['listings', id],
@@ -19,6 +20,10 @@ export default function ListingDetailPage() {
   const deleteMutation = useMutation({
     mutationFn: () => listingsApi.remove(id!),
     onSuccess: () => navigate('/'),
+  })
+
+  const chatMutation = useMutation({
+    mutationFn: () => chatsApi.createConversation(id!),
   })
 
   if (isLoading) {
@@ -56,6 +61,25 @@ export default function ListingDetailPage() {
             <ReactMarkdown>{listing.description}</ReactMarkdown>
           </div>
         </section>
+
+        {isAuthenticated && !isOwner && (
+          <div className="listing-detail__actions">
+            <button
+              className="listing-detail__chat"
+              type="button"
+              onClick={() => chatMutation.mutate()}
+              disabled={chatMutation.isPending || chatMutation.isSuccess}
+            >
+              {chatMutation.isPending ? 'Отправка…' : 'Написать продавцу'}
+            </button>
+            {chatMutation.isSuccess && (
+              <p className="listing-detail__success">Чат с продавцом открыт</p>
+            )}
+            {chatMutation.isError && (
+              <p className="listing-detail__error">Не удалось начать чат</p>
+            )}
+          </div>
+        )}
 
         {isOwner && (
           <div className="listing-detail__actions">
