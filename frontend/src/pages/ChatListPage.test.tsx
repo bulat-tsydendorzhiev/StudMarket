@@ -6,6 +6,7 @@ import {
   authenticatedAuthRoutes,
   renderWithProviders,
   stubFetch,
+  type MockRoutes,
 } from '../testHelpers'
 
 function conversation(overrides: Record<string, unknown> = {}) {
@@ -15,8 +16,20 @@ function conversation(overrides: Record<string, unknown> = {}) {
     listing_title: 'Велосипед',
     buyer_id: 'user-buyer',
     seller_id: 'user-1',
+    last_message: null,
     created_at: '2026-09-05T00:00:00Z',
     updated_at: '2026-09-05T00:00:00Z',
+    ...overrides,
+  }
+}
+
+function baseRoutes(overrides: Record<string, unknown> = {}): MockRoutes {
+  return {
+    ...authenticatedAuthRoutes(),
+    'GET /auth/users/user-buyer': {
+      status: 200,
+      body: { id: 'user-buyer', username: 'bob' },
+    },
     ...overrides,
   }
 }
@@ -38,10 +51,7 @@ afterEach(() => {
 
 describe('ChatListPage', () => {
   it('shows a loading state while fetching conversations', async () => {
-    stubFetch({
-      ...authenticatedAuthRoutes(),
-      'GET /chat/conversations': { status: 200, body: [] },
-    })
+    stubFetch(baseRoutes({ 'GET /chat/conversations': { status: 200, body: [] } }))
     renderChatListPage()
 
     expect(screen.getByText('Загрузка…')).toBeInTheDocument()
@@ -49,49 +59,50 @@ describe('ChatListPage', () => {
   })
 
   it('shows the empty state when there are no conversations', async () => {
-    stubFetch({
-      ...authenticatedAuthRoutes(),
-      'GET /chat/conversations': { status: 200, body: [] },
-    })
+    stubFetch(baseRoutes({ 'GET /chat/conversations': { status: 200, body: [] } }))
     renderChatListPage()
 
     expect(await screen.findByText('Чатов пока нет')).toBeInTheDocument()
   })
 
-  it('renders conversations with listing title and role', async () => {
-    stubFetch({
-      ...authenticatedAuthRoutes(),
-      'GET /chat/conversations': {
-        status: 200,
-        body: [
-          conversation({ id: 'conv-1' }),
-          conversation({
-            id: 'conv-2',
-            buyer_id: 'user-1',
-            seller_id: 'user-seller',
-            listing_title: 'Учебник',
-          }),
-        ],
-      },
-    })
+  it('renders the interlocutor nickname with the last message', async () => {
+    stubFetch(
+      baseRoutes({
+        'GET /chat/conversations': {
+          status: 200,
+          body: [
+            conversation({ id: 'conv-1', last_message: 'Здравствуйте!' }),
+            conversation({
+              id: 'conv-2',
+              buyer_id: 'user-1',
+              seller_id: 'user-seller',
+              last_message: null,
+            }),
+          ],
+        },
+        'GET /auth/users/user-seller': {
+          status: 200,
+          body: { id: 'user-seller', username: 'alice' },
+        },
+      }),
+    )
     renderChatListPage()
 
-    expect(await screen.findByText('Велосипед')).toBeInTheDocument()
-    expect(screen.getByText('Учебник')).toBeInTheDocument()
-    expect(screen.getAllByText('Вы продавец').length).toBe(1)
-    expect(screen.getAllByText('Вы покупатель').length).toBe(1)
+    expect(await screen.findByText('bob')).toBeInTheDocument()
+    expect(await screen.findByText('alice')).toBeInTheDocument()
+    expect(screen.getByText('Здравствуйте!')).toBeInTheDocument()
+    expect(screen.getAllByText('Сообщений пока нет').length).toBe(1)
 
-    const first = screen.getByRole('link', { name: /Велосипед/ })
+    const first = screen.getByRole('link', { name: /bob/ })
     expect(first).toHaveAttribute('href', '/chat/conv-1')
-    const second = screen.getByRole('link', { name: /Учебник/ })
+    const second = screen.getByRole('link', { name: /alice/ })
     expect(second).toHaveAttribute('href', '/chat/conv-2')
   })
 
   it('shows an error state when conversations fail to load', async () => {
-    stubFetch({
-      ...authenticatedAuthRoutes(),
-      'GET /chat/conversations': { status: 500, body: { detail: 'boom' } },
-    })
+    stubFetch(
+      baseRoutes({ 'GET /chat/conversations': { status: 500, body: { detail: 'boom' } } }),
+    )
     renderChatListPage()
 
     expect(

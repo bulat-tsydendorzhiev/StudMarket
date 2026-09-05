@@ -15,6 +15,7 @@ export interface ConversationListItem {
   listing_title: string | null
   buyer_id: string
   seller_id: string
+  last_message: string | null
   created_at: string
   updated_at: string
 }

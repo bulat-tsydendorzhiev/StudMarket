@@ -25,6 +25,7 @@ class ConversationListItem(BaseModel):
     listing_title: str | None
     buyer_id: uuid.UUID
     seller_id: uuid.UUID
+    last_message: str | None
     created_at: datetime
     updated_at: datetime
 

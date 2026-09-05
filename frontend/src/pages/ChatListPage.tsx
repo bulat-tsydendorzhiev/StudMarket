@@ -1,11 +1,40 @@
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
-import { chatsApi } from '../api/chats'
+import { chatsApi, type ConversationListItem } from '../api/chats'
+import { usersApi } from '../api/users'
 import { useAuth } from '../auth/AuthContext'
 
-export default function ChatListPage() {
+function ConversationRow({ conversation }: { conversation: ConversationListItem }) {
   const { user } = useAuth()
 
+  const otherUserId =
+    conversation && user && conversation.buyer_id === user.id
+      ? conversation.seller_id
+      : (conversation?.buyer_id ?? null)
+
+  const { data: otherUser } = useQuery({
+    queryKey: ['auth', 'users', otherUserId],
+    queryFn: () => usersApi.get(otherUserId!),
+    enabled: Boolean(otherUserId),
+  })
+
+  return (
+    <Link
+      className="chat-list__item"
+      key={conversation.id}
+      to={`/chat/${conversation.id}`}
+    >
+      <span className="chat-list__item-title">
+        {otherUser?.username ?? 'Собеседник'}
+      </span>
+      <span className="chat-list__item-subtitle">
+        {conversation.last_message ?? 'Сообщений пока нет'}
+      </span>
+    </Link>
+  )
+}
+
+export default function ChatListPage() {
   const { data: conversations, isLoading, isError } = useQuery({
     queryKey: ['chat', 'conversations'],
     queryFn: chatsApi.listConversations,
@@ -34,23 +63,12 @@ export default function ChatListPage() {
 
         {!isLoading && !isError && conversations && conversations.length > 0 && (
           <div className="chat-list__items">
-            {conversations.map((conversation) => {
-              const isSeller = conversation.seller_id === user?.id
-              return (
-                <Link
-                  className="chat-list__item"
-                  key={conversation.id}
-                  to={`/chat/${conversation.id}`}
-                >
-                  <span className="chat-list__item-title">
-                    {conversation.listing_title ?? 'Объявление'}
-                  </span>
-                  <span className="chat-list__item-role">
-                    {isSeller ? 'Вы продавец' : 'Вы покупатель'}
-                  </span>
-                </Link>
-              )
-            })}
+            {conversations.map((conversation) => (
+              <ConversationRow
+                key={conversation.id}
+                conversation={conversation}
+              />
+            ))}
           </div>
         )}
       </main>

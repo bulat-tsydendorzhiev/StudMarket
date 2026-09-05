@@ -8,7 +8,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.config import settings
-from app.models import Conversation
+from app.models import Conversation, Message
 
 BUYER_ID = uuid.uuid4()
 OTHER_USER_ID = uuid.uuid4()
@@ -201,6 +201,52 @@ def test_seller_sees_their_conversations(client: TestClient, db_session, mock_li
     assert body[0]["seller_id"] == str(SELLER_ID)
     assert body[0]["listing_id"] == str(LISTING_ID)
     assert body[0]["listing_title"] == "Велосипед"
+
+
+def test_list_conversations_includes_last_message(
+    client: TestClient, db_session, mock_listing_service
+) -> None:
+    _patch_listing_service(mock_listing_service, _listing_response())
+    conversation_id = uuid.uuid4()
+    _seed_conversation(db_session, conversation_id, LISTING_ID, BUYER_ID, SELLER_ID)
+    db_session.add(
+        Message(
+            conversation_id=conversation_id,
+            sender_id=BUYER_ID,
+            text="Первое сообщение",
+        )
+    )
+    db_session.commit()
+    db_session.add(
+        Message(
+            conversation_id=conversation_id,
+            sender_id=SELLER_ID,
+            text="Последнее",
+        )
+    )
+    db_session.commit()
+    _auth(client, SELLER_ID)
+
+    response = client.get("/conversations")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert len(body) == 1
+    assert body[0]["last_message"] == "Последнее"
+
+
+def test_list_conversations_last_message_is_none_when_empty(
+    client: TestClient, db_session, mock_listing_service
+) -> None:
+    _patch_listing_service(mock_listing_service, _listing_response())
+    conversation_id = uuid.uuid4()
+    _seed_conversation(db_session, conversation_id, LISTING_ID, BUYER_ID, SELLER_ID)
+    _auth(client, SELLER_ID)
+
+    response = client.get("/conversations")
+
+    assert response.status_code == 200
+    assert response.json()[0]["last_message"] is None
 
 
 def test_buyer_sees_their_conversations(client: TestClient, db_session, mock_listing_service) -> None:

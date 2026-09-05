@@ -926,10 +926,10 @@ body {
 
 .chat-list__item {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 16px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 14px 16px;
   background: #fff;
   border: 1px solid #e3e6ea;
   border-radius: 12px;
@@ -947,7 +947,12 @@ body {
   font-weight: 600;
 }
 
-.chat-list__item-role {
+.chat-list__item-subtitle {
   font-size: 13px;
-  color: #888;
+  color: #6b7280;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
 }

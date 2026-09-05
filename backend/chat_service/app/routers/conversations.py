@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 
 from ..config import settings
 from ..database import get_db
-from ..models import Conversation
+from ..models import Conversation, Message
 from ..schemas import ConversationCreate, ConversationListItem, ConversationResponse
 from ..security import decode_access_token
 
@@ -121,6 +121,19 @@ def create_conversation(
     return conversation
 
 
+def _last_message_texts(db: Session) -> dict[uuid.UUID, str]:
+    rows = db.execute(
+        select(Message.conversation_id, Message.text)
+        .distinct(Message.conversation_id)
+        .order_by(
+            Message.conversation_id,
+            Message.created_at.desc(),
+            Message.id.desc(),
+        )
+    ).all()
+    return {conversation_id: text for conversation_id, text in rows}
+
+
 @router.get("", response_model=list[ConversationListItem])
 def list_conversations(
     request: Request,
@@ -137,6 +150,7 @@ def list_conversations(
         )
         .order_by(Conversation.updated_at.desc(), Conversation.id.desc())
     ).all()
+    last_messages = _last_message_texts(db)
     return [
         ConversationListItem(
             id=conversation.id,
@@ -144,6 +158,7 @@ def list_conversations(
             listing_title=_get_listing_title(conversation.listing_id),
             buyer_id=conversation.buyer_id,
             seller_id=conversation.seller_id,
+            last_message=last_messages.get(conversation.id),
             created_at=conversation.created_at,
             updated_at=conversation.updated_at,
         )
