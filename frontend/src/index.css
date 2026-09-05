@@ -667,12 +667,6 @@ body {
   color: #888;
 }
 
-.listing-detail__seller {
-  margin: 0;
-  font-size: 15px;
-  color: #333;
-}
-
 .listing-detail__actions {
   display: flex;
   align-items: center;

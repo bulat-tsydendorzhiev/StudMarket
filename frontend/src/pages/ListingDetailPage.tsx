@@ -57,13 +57,6 @@ export default function ListingDetailPage() {
           </div>
         </section>
 
-        <section className="listing-detail__block">
-          <h2 className="listing-detail__heading">Продавец</h2>
-          <p className="listing-detail__seller">
-            {isOwner ? user?.username ?? 'Вы' : `ID продавца: ${listing.seller_id}`}
-          </p>
-        </section>
-
         {isOwner && (
           <div className="listing-detail__actions">
             <Link className="listing-detail__edit" to={`/listings/${listing.id}/edit`}>

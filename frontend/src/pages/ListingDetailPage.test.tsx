@@ -4,7 +4,6 @@ import { Route, Routes } from 'react-router-dom'
 import ListingDetailPage from './ListingDetailPage'
 import {
   authenticatedAuthRoutes,
-  currentUser,
   guestAuthRoutes,
   makeListing,
   renderWithProviders,
@@ -36,7 +35,8 @@ describe('ListingDetailPage', () => {
     expect(await screen.findByText('Велосипед')).toBeInTheDocument()
     expect(screen.getByText('1500 ₽')).toBeInTheDocument()
     expect(screen.getByText('Почти новый велосипед')).toBeInTheDocument()
-    expect(screen.getByText(/ID продавца/)).toBeInTheDocument()
+    expect(screen.queryByText(/Продавец/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/ID продавца/)).not.toBeInTheDocument()
     expect(screen.queryByRole('link', { name: 'Редактировать' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Удалить' })).not.toBeInTheDocument()
   })
@@ -102,17 +102,6 @@ describe('ListingDetailPage', () => {
     expect(await screen.findByText('Велосипед')).toBeInTheDocument()
     expect(screen.queryByRole('link', { name: 'Редактировать' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Удалить' })).not.toBeInTheDocument()
-  })
-
-  it('shows the owner username as seller information', async () => {
-    stubFetch({
-      ...authenticatedAuthRoutes(),
-      'GET /listings/listing-1': { status: 200, body: makeListing() },
-    })
-    renderDetailPage()
-
-    expect(await screen.findByText('Велосипед')).toBeInTheDocument()
-    expect(screen.getByText(currentUser.username)).toBeInTheDocument()
   })
 
   it('deletes the listing and returns to the home page', async () => {
