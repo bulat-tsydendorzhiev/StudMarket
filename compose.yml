@@ -58,6 +58,7 @@ services:
     environment:
       SERVICE_NAME: listing-service
       DATABASE_URL: postgresql+psycopg://studmarket:studmarket@listing-db:5432/listing_db
+      JWT_SECRET: ${JWT_SECRET:-dev-only-secret-change-me-in-production-0123456789}
     depends_on:
       listing-db:
         condition: service_healthy
@@ -82,6 +83,7 @@ services:
     environment:
       SERVICE_NAME: api-gateway
       AUTH_SERVICE_URL: http://auth-service:8000
+      LISTING_SERVICE_URL: http://listing-service:8000
       CORS_ORIGINS: http://localhost:5173,http://127.0.0.1:5173
     ports:
       - "8000:8000"
