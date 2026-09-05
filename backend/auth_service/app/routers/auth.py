@@ -1,4 +1,7 @@
-from fastapi import APIRouter, Depends, HTTPException, Response, status
+import uuid
+
+import jwt
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from sqlalchemy import or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -7,9 +10,50 @@ from ..config import settings
 from ..database import get_db
 from ..models import User
 from ..schemas import LoginRequest, LoginResponse, RegisterRequest, RegisterResponse
-from ..security import burn_password_check, create_access_token, hash_password, verify_password
+from ..security import (
+    burn_password_check,
+    create_access_token,
+    decode_access_token,
+    hash_password,
+    verify_password,
+)
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+
+
+def _get_current_user(request: Request, db: Session) -> User:
+    token = request.cookies.get(settings.jwt_cookie_name)
+    if not token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Не авторизован",
+        )
+    try:
+        user_id = uuid.UUID(decode_access_token(token))
+    except (ValueError, TypeError, jwt.PyJWTError):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Не авторизован",
+        )
+    user = db.get(User, user_id)
+    if user is None or not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Не авторизован",
+        )
+    return user
+
+
+def _set_auth_cookie(response: Response, user: User) -> None:
+    token = create_access_token(str(user.id))
+    response.set_cookie(
+        key=settings.jwt_cookie_name,
+        value=token,
+        httponly=True,
+        samesite="lax",
+        max_age=settings.jwt_access_token_minutes * 60,
+        path="/",
+    )
 
 
 @router.post(
@@ -17,7 +61,11 @@ router = APIRouter(prefix="/auth", tags=["auth"])
     response_model=RegisterResponse,
     status_code=status.HTTP_201_CREATED,
 )
-def register(payload: RegisterRequest, db: Session = Depends(get_db)) -> User:
+def register(
+    payload: RegisterRequest,
+    response: Response,
+    db: Session = Depends(get_db),
+) -> User:
     username = payload.username
     email = payload.email
 
@@ -46,6 +94,7 @@ def register(payload: RegisterRequest, db: Session = Depends(get_db)) -> User:
             detail="Имя пользователя или email уже заняты",
         )
     db.refresh(user)
+    _set_auth_cookie(response, user)
     return user
 
 
@@ -71,13 +120,22 @@ def login(payload: LoginRequest, response: Response, db: Session = Depends(get_d
             detail="Неверное имя пользователя или пароль",
         )
 
-    token = create_access_token(str(user.id))
-    response.set_cookie(
+    _set_auth_cookie(response, user)
+    return user
+
+
+@router.get("/me", response_model=LoginResponse)
+def me(request: Request, db: Session = Depends(get_db)) -> User:
+    return _get_current_user(request, db)
+
+
+@router.post("/logout", response_class=Response, status_code=status.HTTP_204_NO_CONTENT)
+def logout() -> Response:
+    response = Response(status_code=status.HTTP_204_NO_CONTENT)
+    response.delete_cookie(
         key=settings.jwt_cookie_name,
-        value=token,
         httponly=True,
         samesite="lax",
-        max_age=settings.jwt_access_token_minutes * 60,
         path="/",
     )
-    return user
+    return response
