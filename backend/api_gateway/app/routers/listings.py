@@ -7,8 +7,12 @@ from ..config import settings
 router = APIRouter(prefix="/listings", tags=["listings"])
 
 
-async def _proxy(method: str, path: str, request: Request) -> JSONResponse:
+async def _proxy(
+    method: str, path: str, request: Request
+) -> JSONResponse:
     url = f"{settings.listing_service_url}/listings{path}"
+    if request.url.query:
+        url = f"{url}?{request.url.query}"
     body = await request.body()
     try:
         async with httpx.AsyncClient(timeout=10) as client:
@@ -24,6 +28,16 @@ async def _proxy(method: str, path: str, request: Request) -> JSONResponse:
 
     content = response.json() if response.content else None
     return JSONResponse(status_code=response.status_code, content=content)
+
+
+@router.get("/tags")
+async def list_tags(request: Request) -> JSONResponse:
+    return await _proxy("GET", "/tags", request)
+
+
+@router.get("/locations")
+async def list_locations(request: Request) -> JSONResponse:
+    return await _proxy("GET", "/locations", request)
 
 
 @router.post("")

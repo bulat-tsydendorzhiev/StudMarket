@@ -1,5 +1,15 @@
 import { apiClient } from './client'
 
+export interface Tag {
+  id: string
+  name: string
+}
+
+export interface Location {
+  id: string
+  name: string
+}
+
 export interface Listing {
   id: string
   seller_id: string
@@ -10,16 +20,47 @@ export interface Listing {
   created_at: string
   updated_at: string
   expires_at: string | null
+  location: string | null
+  tags: string[]
 }
 
 export interface ListingInput {
   title: string
   description: string
   price: number
+  tags: string[]
+  location: string | null
+}
+
+export interface ListingFilters {
+  tags?: string[]
+  excludeTags?: string[]
+  locations?: string[]
+}
+
+export const tagsApi = {
+  list: () => apiClient.get<Tag[]>('/listings/tags'),
+}
+
+export const locationsApi = {
+  list: () => apiClient.get<Location[]>('/listings/locations'),
 }
 
 export const listingsApi = {
-  list: () => apiClient.get<Listing[]>('/listings'),
+  list: (filters: ListingFilters = {}) => {
+    const params = new URLSearchParams()
+    for (const tag of filters.tags ?? []) {
+      params.append('tags', tag)
+    }
+    for (const tag of filters.excludeTags ?? []) {
+      params.append('exclude_tags', tag)
+    }
+    for (const location of filters.locations ?? []) {
+      params.append('location', location)
+    }
+    const query = params.toString()
+    return apiClient.get<Listing[]>(query ? `/listings?${query}` : '/listings')
+  },
   get: (id: string) => apiClient.get<Listing>(`/listings/${id}`),
   create: (input: ListingInput) => apiClient.post<Listing>('/listings', input),
   update: (id: string, input: ListingInput) =>
