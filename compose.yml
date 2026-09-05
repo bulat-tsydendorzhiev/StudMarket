@@ -71,6 +71,8 @@ services:
     environment:
       SERVICE_NAME: chat-service
       DATABASE_URL: postgresql+psycopg://studmarket:studmarket@chat-db:5432/chat_db
+      JWT_SECRET: ${JWT_SECRET:-dev-only-secret-change-me-in-production-0123456789}
+      LISTING_SERVICE_URL: http://listing-service:8000
     depends_on:
       chat-db:
         condition: service_healthy
@@ -84,6 +86,7 @@ services:
       SERVICE_NAME: api-gateway
       AUTH_SERVICE_URL: http://auth-service:8000
       LISTING_SERVICE_URL: http://listing-service:8000
+      CHAT_SERVICE_URL: http://chat-service:8000
       CORS_ORIGINS: http://localhost:5173,http://127.0.0.1:5173
     ports:
       - "8000:8000"

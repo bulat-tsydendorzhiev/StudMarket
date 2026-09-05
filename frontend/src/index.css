@@ -692,6 +692,29 @@ body {
   cursor: default;
 }
 
+.listing-detail__chat {
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+  background: #1a5cff;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.listing-detail__chat:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.listing-detail__success {
+  width: 100%;
+  margin: 0;
+  color: #1b7f3b;
+  font-size: 14px;
+}
+
 .listing-detail__error {
   width: 100%;
   margin: 0;
