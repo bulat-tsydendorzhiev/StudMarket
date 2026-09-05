@@ -3,14 +3,14 @@ import uuid
 import httpx
 import jwt
 from fastapi import APIRouter, Depends, HTTPException, Request, status
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from ..config import settings
 from ..database import get_db
-from ..models import Conversation
-from ..schemas import ConversationCreate, ConversationResponse
+from ..models import Conversation, Message
+from ..schemas import ConversationCreate, ConversationListItem, ConversationResponse
 from ..security import decode_access_token
 
 router = APIRouter(prefix="/conversations", tags=["conversations"])
@@ -62,6 +62,19 @@ def _get_listing_seller_id(listing_id: uuid.UUID) -> uuid.UUID:
         )
 
 
+def _get_listing_title(listing_id: uuid.UUID) -> str | None:
+    url = f"{settings.listing_service_url}/listings/{listing_id}"
+    try:
+        with httpx.Client(timeout=10) as client:
+            response = client.get(url)
+    except httpx.HTTPError:
+        return None
+    if response.status_code != status.HTTP_200_OK:
+        return None
+    title = response.json().get("title")
+    return str(title) if title else None
+
+
 def _find_conversation(db: Session, listing_id: uuid.UUID, buyer_id: uuid.UUID) -> Conversation | None:
     return db.scalar(
         select(Conversation).where(
@@ -106,3 +119,77 @@ def create_conversation(
         raise
     db.refresh(conversation)
     return conversation
+
+
+def _last_message_texts(db: Session) -> dict[uuid.UUID, str]:
+    rows = db.execute(
+        select(Message.conversation_id, Message.text)
+        .distinct(Message.conversation_id)
+        .order_by(
+            Message.conversation_id,
+            Message.created_at.desc(),
+            Message.id.desc(),
+        )
+    ).all()
+    return {conversation_id: text for conversation_id, text in rows}
+
+
+@router.get("", response_model=list[ConversationListItem])
+def list_conversations(
+    request: Request,
+    db: Session = Depends(get_db),
+) -> list[ConversationListItem]:
+    user_id = _get_current_user_id(request)
+    conversations = db.scalars(
+        select(Conversation)
+        .where(
+            or_(
+                Conversation.buyer_id == user_id,
+                Conversation.seller_id == user_id,
+            )
+        )
+        .order_by(Conversation.updated_at.desc(), Conversation.id.desc())
+    ).all()
+    last_messages = _last_message_texts(db)
+    return [
+        ConversationListItem(
+            id=conversation.id,
+            listing_id=conversation.listing_id,
+            listing_title=_get_listing_title(conversation.listing_id),
+            buyer_id=conversation.buyer_id,
+            seller_id=conversation.seller_id,
+            last_message=last_messages.get(conversation.id),
+            created_at=conversation.created_at,
+            updated_at=conversation.updated_at,
+        )
+        for conversation in conversations
+    ]
+
+
+def _get_participant_conversation(
+    db: Session, conversation_id: uuid.UUID, user_id: uuid.UUID
+) -> Conversation:
+    conversation = db.scalar(
+        select(Conversation).where(Conversation.id == conversation_id)
+    )
+    if conversation is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Чат не найден",
+        )
+    if user_id not in (conversation.buyer_id, conversation.seller_id):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Доступ запрещён",
+        )
+    return conversation
+
+
+@router.get("/{conversation_id}", response_model=ConversationResponse)
+def get_conversation(
+    conversation_id: uuid.UUID,
+    request: Request,
+    db: Session = Depends(get_db),
+) -> Conversation:
+    user_id = _get_current_user_id(request)
+    return _get_participant_conversation(db, conversation_id, user_id)

@@ -72,6 +72,17 @@ describe('HomePage', () => {
     ).toBeInTheDocument()
   })
 
+  it('shows a "Чаты" link for authenticated users', async () => {
+    stubFetch({
+      ...authenticatedAuthRoutes(),
+      'GET /listings': { status: 200, body: [] },
+    })
+    renderWithProviders(<HomePage />)
+
+    const chatLink = await screen.findByRole('link', { name: 'Чаты' })
+    expect(chatLink).toHaveAttribute('href', '/chat')
+  })
+
   it('renders a filter panel with categories and locations', async () => {
     stubFetch({
       ...authenticatedAuthRoutes(),

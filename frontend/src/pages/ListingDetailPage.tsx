@@ -24,6 +24,7 @@ export default function ListingDetailPage() {
 
   const chatMutation = useMutation({
     mutationFn: () => chatsApi.createConversation(id!),
+    onSuccess: (conversation) => navigate(`/chat/${conversation.id}`),
   })
 
   if (isLoading) {

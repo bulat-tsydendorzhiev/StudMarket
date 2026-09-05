@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, screen } from '@testing-library/react'
 import { Route, Routes } from 'react-router-dom'
 import ListingDetailPage from './ListingDetailPage'
+import ChatPage from './ChatPage'
 import {
   authenticatedAuthRoutes,
   currentUser,
@@ -16,6 +17,7 @@ function renderDetailPage() {
     <Routes>
       <Route path="/" element={<div>Home Page</div>} />
       <Route path="/listings/:id" element={<ListingDetailPage />} />
+      <Route path="/chat/:conversationId" element={<ChatPage />} />
     </Routes>,
     ['/listings/listing-1'],
   )
@@ -193,7 +195,7 @@ describe('ListingDetailPage', () => {
     ).toBeInTheDocument()
   })
 
-  it('creates a conversation when "Написать продавцу" is clicked', async () => {
+  it('creates a conversation and navigates to the chat when "Написать продавцу" is clicked', async () => {
     const conversation = {
       id: 'conv-1',
       listing_id: 'listing-1',
@@ -209,13 +211,19 @@ describe('ListingDetailPage', () => {
         body: makeListing({ seller_id: 'some-other-user' }),
       },
       'POST /chat/conversations': { status: 201, body: conversation },
+      'GET /chat/conversations/conv-1': { status: 200, body: conversation },
+      'GET /auth/users/some-other-user': {
+        status: 200,
+        body: { id: 'some-other-user', username: 'bob' },
+      },
+      'GET /chat/conversations/conv-1/messages': { status: 200, body: [] },
     })
     renderDetailPage()
 
     const chatButton = await screen.findByRole('button', { name: 'Написать продавцу' })
     fireEvent.click(chatButton)
 
-    expect(await screen.findByText('Чат с продавцом открыт')).toBeInTheDocument()
+    expect(await screen.findByText('Сообщений пока нет')).toBeInTheDocument()
 
     const postCall = fetchMock.mock.calls.find(
       ([input, init]) =>

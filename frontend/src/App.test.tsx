@@ -215,6 +215,63 @@ describe('App', () => {
     expect(await screen.findByRole('heading', { name: 'Вход' })).toBeInTheDocument()
   })
 
+  it('redirects guests away from "/chat/:conversationId" to "/login"', async () => {
+    stubFetch(guestRoutes())
+    window.history.pushState({}, '', '/chat/conv-1')
+    renderApp()
+
+    expect(await screen.findByRole('heading', { name: 'Вход' })).toBeInTheDocument()
+  })
+
+  it('redirects guests away from "/chat" to "/login"', async () => {
+    stubFetch(guestRoutes())
+    window.history.pushState({}, '', '/chat')
+    renderApp()
+
+    expect(await screen.findByRole('heading', { name: 'Вход' })).toBeInTheDocument()
+  })
+
+  it('renders the chat list page for authenticated users', async () => {
+    stubFetch({
+      ...authenticatedRoutes(),
+      'GET /chat/conversations': { status: 200, body: [] },
+    })
+    window.history.pushState({}, '', '/chat')
+    renderApp()
+
+    expect(
+      await screen.findByText('Чатов пока нет'),
+    ).toBeInTheDocument()
+  })
+
+  it('renders the chat page for authenticated users', async () => {
+    stubFetch({
+      ...authenticatedRoutes(),
+      'GET /chat/conversations/conv-1': {
+        status: 200,
+        body: {
+          id: 'conv-1',
+          listing_id: 'listing-1',
+          buyer_id: 'uuid-1',
+          seller_id: 'uuid-other',
+          created_at: '2026-09-05T00:00:00Z',
+          updated_at: '2026-09-05T00:00:00Z',
+        },
+      },
+      'GET /auth/users/uuid-other': {
+        status: 200,
+        body: { id: 'uuid-other', username: 'bob' },
+      },
+      'GET /chat/conversations/conv-1/messages': { status: 200, body: [] },
+    })
+    window.history.pushState({}, '', '/chat/conv-1')
+    renderApp()
+
+    expect(
+      await screen.findByText('Сообщений пока нет'),
+    ).toBeInTheDocument()
+  })
+
   it('shows the authenticated UI on the home page after login', async () => {
     stubFetch({
       ...guestRoutes(),

@@ -5,6 +5,7 @@ interface MarkdownEditorProps {
   value: string
   onChange: (value: string) => void
   rows?: number
+  ariaLabel?: string
 }
 
 interface ApplyResult {
@@ -15,7 +16,12 @@ interface ApplyResult {
 
 type Tab = 'write' | 'preview'
 
-export default function MarkdownEditor({ value, onChange, rows = 5 }: MarkdownEditorProps) {
+export default function MarkdownEditor({
+  value,
+  onChange,
+  rows = 5,
+  ariaLabel = 'Описание',
+}: MarkdownEditorProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const [tab, setTab] = useState<Tab>('write')
 
@@ -132,7 +138,7 @@ export default function MarkdownEditor({ value, onChange, rows = 5 }: MarkdownEd
             ref={textareaRef}
             rows={rows}
             value={value}
-            aria-label="Описание"
+            aria-label={ariaLabel}
             onChange={(e) => onChange(e.target.value)}
           />
         </>

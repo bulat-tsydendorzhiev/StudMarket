@@ -8,6 +8,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.config import settings
+from app.models import Conversation, Message
 
 BUYER_ID = uuid.uuid4()
 OTHER_USER_ID = uuid.uuid4()
@@ -164,3 +165,183 @@ def test_create_conversation_502_on_unexpected_listing_status(
     response = client.post("/conversations", json={"listing_id": str(LISTING_ID)})
 
     assert response.status_code == 502
+
+
+def _seed_conversation(db_session, conversation_id, listing_id, buyer_id, seller_id):
+    conversation = Conversation(
+        id=conversation_id,
+        listing_id=listing_id,
+        buyer_id=buyer_id,
+        seller_id=seller_id,
+    )
+    db_session.add(conversation)
+    db_session.commit()
+    return conversation
+
+
+def test_list_conversations_requires_auth(client: TestClient) -> None:
+    response = client.get("/conversations")
+
+    assert response.status_code == 401
+
+
+def test_seller_sees_their_conversations(client: TestClient, db_session, mock_listing_service) -> None:
+    _patch_listing_service(mock_listing_service, _listing_response())
+    conversation_id = uuid.uuid4()
+    _seed_conversation(db_session, conversation_id, LISTING_ID, BUYER_ID, SELLER_ID)
+    _auth(client, SELLER_ID)
+
+    response = client.get("/conversations")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert len(body) == 1
+    assert body[0]["id"] == str(conversation_id)
+    assert body[0]["buyer_id"] == str(BUYER_ID)
+    assert body[0]["seller_id"] == str(SELLER_ID)
+    assert body[0]["listing_id"] == str(LISTING_ID)
+    assert body[0]["listing_title"] == "Велосипед"
+
+
+def test_list_conversations_includes_last_message(
+    client: TestClient, db_session, mock_listing_service
+) -> None:
+    _patch_listing_service(mock_listing_service, _listing_response())
+    conversation_id = uuid.uuid4()
+    _seed_conversation(db_session, conversation_id, LISTING_ID, BUYER_ID, SELLER_ID)
+    db_session.add(
+        Message(
+            conversation_id=conversation_id,
+            sender_id=BUYER_ID,
+            text="Первое сообщение",
+        )
+    )
+    db_session.commit()
+    db_session.add(
+        Message(
+            conversation_id=conversation_id,
+            sender_id=SELLER_ID,
+            text="Последнее",
+        )
+    )
+    db_session.commit()
+    _auth(client, SELLER_ID)
+
+    response = client.get("/conversations")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert len(body) == 1
+    assert body[0]["last_message"] == "Последнее"
+
+
+def test_list_conversations_last_message_is_none_when_empty(
+    client: TestClient, db_session, mock_listing_service
+) -> None:
+    _patch_listing_service(mock_listing_service, _listing_response())
+    conversation_id = uuid.uuid4()
+    _seed_conversation(db_session, conversation_id, LISTING_ID, BUYER_ID, SELLER_ID)
+    _auth(client, SELLER_ID)
+
+    response = client.get("/conversations")
+
+    assert response.status_code == 200
+    assert response.json()[0]["last_message"] is None
+
+
+def test_buyer_sees_their_conversations(client: TestClient, db_session, mock_listing_service) -> None:
+    _patch_listing_service(mock_listing_service, _listing_response())
+    conversation_id = uuid.uuid4()
+    _seed_conversation(db_session, conversation_id, LISTING_ID, BUYER_ID, SELLER_ID)
+    _auth(client, BUYER_ID)
+
+    response = client.get("/conversations")
+
+    assert response.status_code == 200
+    assert len(response.json()) == 1
+
+
+def test_user_sees_only_their_conversations(client: TestClient, db_session, mock_listing_service) -> None:
+    _patch_listing_service(mock_listing_service, _listing_response())
+    _seed_conversation(db_session, uuid.uuid4(), LISTING_ID, BUYER_ID, SELLER_ID)
+    _seed_conversation(
+        db_session, uuid.uuid4(), uuid.uuid4(), OTHER_USER_ID, BUYER_ID
+    )
+    _auth(client, BUYER_ID)
+
+    response = client.get("/conversations")
+
+    assert response.status_code == 200
+    assert len(response.json()) == 2
+
+
+def test_outsider_sees_empty_list(client: TestClient, db_session) -> None:
+    _seed_conversation(db_session, uuid.uuid4(), LISTING_ID, BUYER_ID, SELLER_ID)
+    _auth(client, OTHER_USER_ID)
+
+    response = client.get("/conversations")
+
+    assert response.status_code == 200
+    assert response.json() == []
+
+
+def test_list_conversations_title_is_none_when_listing_unavailable(
+    client: TestClient, db_session, mock_listing_service
+) -> None:
+    mock_listing_service.return_value.__enter__.return_value.get.side_effect = (
+        httpx.ConnectError("boom")
+    )
+    conversation_id = uuid.uuid4()
+    _seed_conversation(db_session, conversation_id, LISTING_ID, BUYER_ID, SELLER_ID)
+    _auth(client, SELLER_ID)
+
+    response = client.get("/conversations")
+
+    assert response.status_code == 200
+    assert response.json()[0]["listing_title"] is None
+
+
+def test_get_conversation_returns_conversation_for_owner(
+    client: TestClient, db_session
+) -> None:
+    conversation_id = uuid.uuid4()
+    _seed_conversation(db_session, conversation_id, LISTING_ID, BUYER_ID, SELLER_ID)
+    _auth(client, SELLER_ID)
+
+    response = client.get(f"/conversations/{conversation_id}")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["id"] == str(conversation_id)
+    assert body["buyer_id"] == str(BUYER_ID)
+    assert body["seller_id"] == str(SELLER_ID)
+    assert body["listing_id"] == str(LISTING_ID)
+
+
+def test_get_conversation_requires_auth(client: TestClient, db_session) -> None:
+    conversation_id = uuid.uuid4()
+    _seed_conversation(db_session, conversation_id, LISTING_ID, BUYER_ID, SELLER_ID)
+
+    response = client.get(f"/conversations/{conversation_id}")
+
+    assert response.status_code == 401
+
+
+def test_get_conversation_forbidden_for_outsider(
+    client: TestClient, db_session
+) -> None:
+    conversation_id = uuid.uuid4()
+    _seed_conversation(db_session, conversation_id, LISTING_ID, BUYER_ID, SELLER_ID)
+    _auth(client, OTHER_USER_ID)
+
+    response = client.get(f"/conversations/{conversation_id}")
+
+    assert response.status_code == 403
+
+
+def test_get_conversation_404_when_missing(client: TestClient) -> None:
+    _auth(client, BUYER_ID)
+
+    response = client.get(f"/conversations/{uuid.uuid4()}")
+
+    assert response.status_code == 404
