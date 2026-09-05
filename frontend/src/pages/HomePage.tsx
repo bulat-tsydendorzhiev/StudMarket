@@ -1,7 +1,14 @@
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { listingsApi, tagsApi, type Listing, type Tag } from '../api/listings'
+import {
+  locationsApi,
+  listingsApi,
+  tagsApi,
+  type Listing,
+  type Location,
+  type Tag,
+} from '../api/listings'
 import { useAuth } from '../auth/AuthContext'
 
 export function formatPrice(price: number): string {
@@ -11,40 +18,55 @@ export function formatPrice(price: number): string {
   return `${price} ₽`
 }
 
-function isDormitory(name: string): boolean {
-  return name.startsWith('Общежитие')
-}
-
-function dormitoryNumber(name: string): number {
-  const match = name.match(/№(\d+)/)
-  return match ? Number(match[1]) : Number.POSITIVE_INFINITY
-}
-
 export default function HomePage() {
   const { user, isAuthenticated, logout } = useAuth()
   const [loggingOut, setLoggingOut] = useState(false)
   const [selectedTags, setSelectedTags] = useState<string[]>([])
+  const [excludedTags, setExcludedTags] = useState<string[]>([])
+  const [selectedLocations, setSelectedLocations] = useState<string[]>([])
 
   const { data: tags } = useQuery({
     queryKey: ['tags'],
     queryFn: tagsApi.list,
   })
 
-  const { data: listings, isLoading, isError } = useQuery({
-    queryKey: ['listings', selectedTags],
-    queryFn: () => listingsApi.list(selectedTags),
+  const { data: locations } = useQuery({
+    queryKey: ['locations'],
+    queryFn: locationsApi.list,
   })
 
-  const categories = (tags ?? [])
-    .filter((tag: Tag) => !isDormitory(tag.name))
-    .sort((a, b) => a.name.localeCompare(b.name))
-  const dormitories = (tags ?? [])
-    .filter((tag: Tag) => isDormitory(tag.name))
-    .sort((a, b) => dormitoryNumber(a.name) - dormitoryNumber(b.name))
+  const { data: listings, isLoading, isError } = useQuery({
+    queryKey: ['listings', selectedTags, excludedTags, selectedLocations],
+    queryFn: () =>
+      listingsApi.list({
+        tags: selectedTags,
+        excludeTags: excludedTags,
+        locations: selectedLocations,
+      }),
+  })
 
-  const toggleTag = (name: string) => {
-    setSelectedTags((prev) =>
-      prev.includes(name) ? prev.filter((tag) => tag !== name) : [...prev, name],
+  const categories = (tags ?? []).sort((a: Tag, b: Tag) =>
+    a.name.localeCompare(b.name),
+  )
+
+  const cycleTag = (name: string) => {
+    const included = selectedTags.includes(name)
+    const excluded = excludedTags.includes(name)
+    if (included) {
+      setSelectedTags((prev) => prev.filter((tag) => tag !== name))
+      setExcludedTags((prev) => [...prev, name])
+    } else if (excluded) {
+      setExcludedTags((prev) => prev.filter((tag) => tag !== name))
+    } else {
+      setSelectedTags((prev) => [...prev, name])
+    }
+  }
+
+  const toggleLocation = (name: string) => {
+    setSelectedLocations((prev) =>
+      prev.includes(name)
+        ? prev.filter((location) => location !== name)
+        : [...prev, name],
     )
   }
 
@@ -100,29 +122,38 @@ export default function HomePage() {
 
             {categories.length > 0 && (
               <div className="filters__group">
-                {categories.map((tag: Tag) => (
-                  <label className="filters__item" key={tag.id}>
-                    <input
-                      type="checkbox"
-                      checked={selectedTags.includes(tag.name)}
-                      onChange={() => toggleTag(tag.name)}
-                    />
-                    <span>{tag.name}</span>
-                  </label>
-                ))}
+                {categories.map((tag: Tag) => {
+                  const included = selectedTags.includes(tag.name)
+                  const excluded = excludedTags.includes(tag.name)
+                  return (
+                    <label className="filters__item" key={tag.id}>
+                      <input
+                        type="checkbox"
+                        className={
+                          excluded
+                            ? 'filters__checkbox filters__checkbox--excluded'
+                            : 'filters__checkbox'
+                        }
+                        checked={included}
+                        onChange={() => cycleTag(tag.name)}
+                      />
+                      <span>{tag.name}</span>
+                    </label>
+                  )
+                })}
               </div>
             )}
 
-            {dormitories.length > 0 && (
+            {locations && locations.length > 0 && (
               <div className="filters__group">
-                {dormitories.map((tag: Tag) => (
-                  <label className="filters__item" key={tag.id}>
+                {locations.map((location: Location) => (
+                  <label className="filters__item" key={location.id}>
                     <input
                       type="checkbox"
-                      checked={selectedTags.includes(tag.name)}
-                      onChange={() => toggleTag(tag.name)}
+                      checked={selectedLocations.includes(location.name)}
+                      onChange={() => toggleLocation(location.name)}
                     />
-                    <span>{tag.name}</span>
+                    <span>{location.name}</span>
                   </label>
                 ))}
               </div>

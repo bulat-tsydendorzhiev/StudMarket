@@ -6,6 +6,7 @@ import ListingNewPage from './ListingNewPage'
 import {
   authenticatedAuthRoutes,
   guestAuthRoutes,
+  locationsRoutes,
   makeListing,
   renderWithProviders,
   stubFetch,
@@ -56,6 +57,7 @@ describe('ListingNewPage', () => {
     expect(screen.getByLabelText('Название')).toBeInTheDocument()
     expect(screen.getByLabelText('Описание')).toBeInTheDocument()
     expect(screen.getByLabelText(/Цена, ₽/)).toBeInTheDocument()
+    expect(screen.getByLabelText('Локация')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Создать объявление' })).toBeInTheDocument()
   })
 
@@ -83,6 +85,7 @@ describe('ListingNewPage', () => {
       description: 'Почти новый',
       price: 1500,
       tags: [],
+      location: null,
     })
   })
 
@@ -105,7 +108,13 @@ describe('ListingNewPage', () => {
       String(input).endsWith('/listings'),
     )
     const body = JSON.parse(createCall?.[1]?.body as string) as Record<string, unknown>
-    expect(body).toEqual({ title: 'Велосипед', description: 'Почти новый', price: 0, tags: [] })
+    expect(body).toEqual({
+      title: 'Велосипед',
+      description: 'Почти новый',
+      price: 0,
+      tags: [],
+      location: null,
+    })
   })
 
   it('inserts Markdown formatting from the toolbar', () => {
@@ -165,18 +174,24 @@ describe('ListingNewPage', () => {
     ).toBeInTheDocument()
   })
 
-  it('renders tag checkboxes from the tag list', async () => {
-    stubFetch({ ...guestAuthRoutes(), ...tagsRoutes() })
+  it('renders tag checkboxes and location options', async () => {
+    stubFetch({ ...guestAuthRoutes(), ...tagsRoutes(), ...locationsRoutes() })
     renderNewPage()
 
     expect(await screen.findByLabelText('Электроника')).toBeInTheDocument()
-    expect(screen.getByLabelText('Общежитие №2')).toBeInTheDocument()
+    expect(
+      screen.getByRole('option', { name: 'Общежитие №2' }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('option', { name: 'Город' }),
+    ).toBeInTheDocument()
   })
 
-  it('submits the selected tags with the listing', async () => {
+  it('submits the selected tags and location with the listing', async () => {
     const fetchMock = stubFetch({
       ...guestAuthRoutes(),
       ...tagsRoutes(),
+      ...locationsRoutes(),
       'POST /listings': {
         status: 201,
         body: makeListing({ id: 'listing-new' }),
@@ -185,7 +200,10 @@ describe('ListingNewPage', () => {
     renderNewPage()
 
     fireEvent.click(await screen.findByLabelText('Электроника'))
-    fireEvent.click(screen.getByLabelText('Общежитие №3'))
+    fireEvent.click(screen.getByLabelText('Спорт'))
+    fireEvent.change(screen.getByLabelText('Локация'), {
+      target: { value: 'Общежитие №3' },
+    })
     fillForm()
     fireEvent.click(screen.getByRole('button', { name: 'Создать объявление' }))
 
@@ -199,7 +217,8 @@ describe('ListingNewPage', () => {
       title: 'Велосипед',
       description: 'Почти новый',
       price: 1500,
-      tags: ['Электроника', 'Общежитие №3'],
+      tags: ['Электроника', 'Спорт'],
+      location: 'Общежитие №3',
     })
   })
 })
@@ -226,7 +245,10 @@ describe('ListingEditPage', () => {
   it('updates the listing and navigates to it', async () => {
     const fetchMock = stubFetch({
       ...guestAuthRoutes(),
-      'GET /listings/listing-1': { status: 200, body: makeListing() },
+      'GET /listings/listing-1': {
+        status: 200,
+        body: makeListing({ id: 'listing-1', location: 'Город' }),
+      },
       'PATCH /listings/listing-1': {
         status: 200,
         body: makeListing({ title: 'Новый велосипед', price: 2000 }),
@@ -250,16 +272,21 @@ describe('ListingEditPage', () => {
       description: 'Почти новый',
       price: 2000,
       tags: [],
+      location: 'Город',
     })
   })
 
-  it('prefills the selected tags when editing', async () => {
+  it('prefills the selected tags and location when editing', async () => {
     stubFetch({
       ...guestAuthRoutes(),
       ...tagsRoutes(),
+      ...locationsRoutes(),
       'GET /listings/listing-1': {
         status: 200,
-        body: makeListing({ tags: ['Электроника', 'Общежитие №2'] }),
+        body: makeListing({
+          tags: ['Электроника', 'Спорт'],
+          location: 'Общежитие №2',
+        }),
       },
     })
     renderEditPage()
@@ -268,10 +295,11 @@ describe('ListingEditPage', () => {
       await screen.findByRole('heading', { name: 'Редактирование объявления' }),
     ).toBeInTheDocument()
     const electronics = await screen.findByLabelText('Электроника')
-    const dorm = screen.getByLabelText('Общежитие №2')
+    const sport = screen.getByLabelText('Спорт')
     expect(electronics).toBeChecked()
-    expect(dorm).toBeChecked()
-    expect(screen.getByLabelText('Спорт')).not.toBeChecked()
+    expect(sport).toBeChecked()
+    expect(screen.getByLabelText('Бытовая техника')).not.toBeChecked()
+    expect(screen.getByLabelText('Локация')).toHaveValue('Общежитие №2')
   })
 
   it('shows an error when the listing fails to load', async () => {

@@ -35,6 +35,11 @@ async def list_tags(request: Request) -> JSONResponse:
     return await _proxy("GET", "/tags", request)
 
 
+@router.get("/locations")
+async def list_locations(request: Request) -> JSONResponse:
+    return await _proxy("GET", "/locations", request)
+
+
 @router.post("")
 async def create_listing(request: Request) -> JSONResponse:
     return await _proxy("POST", "", request)

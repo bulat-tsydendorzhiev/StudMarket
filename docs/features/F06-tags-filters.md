@@ -2,7 +2,7 @@
 
 ## Goal
 
-Add tags to listings and allow users to filter listings by tags.
+Add tags and location to listings and allow users to filter listings by tags.
 
 ## Database
 
@@ -11,14 +11,13 @@ Use:
 ```text
 tags
 listing_tags
+locations
 ```
 
 as defined in `docs/database.md`.
 
 Tags are predefined.
-
 Users cannot create tags.
-
 There should be only these tags:
 
 ```text
@@ -29,7 +28,12 @@ There should be only these tags:
 Учеба
 Спорт
 Другое
+```
 
+Locations are predefined too.
+Users cannot create them.
+
+```text
 Общежитие №2
 Общежитие №3
 Общежитие №4
@@ -48,15 +52,11 @@ There should be only these tags:
 Город
 ```
 
-Dormitories are ordinary tags.
-
-Do not create a separate `dormitories` table.
-
 ## Backend
 
-Allow tags to be assigned to listings.
+Allow tags and location to be assigned to listings.
 
-Extend listing creation/editing to accept tags.
+Extend listing creation/editing to accept tags and locations.
 
 Add listing filtering:
 
@@ -64,7 +64,12 @@ Add listing filtering:
 GET /listings?tags=...
 ```
 
-Support selecting multiple tags.
+```text
+GET /listings?location=...
+```
+
+Support selecting multiple tags and locations.
+Support ignoring multiple tags and locations.
 
 ## Frontend
 
@@ -72,7 +77,7 @@ Add tags to the listing creation/edit form.
 
 Add a left-side filter panel on the home page.
 
-You should separate dormitories from other tags.
+You should separate locations from other tags.
 
 Example:
 
@@ -102,6 +107,7 @@ Example:
 Общежитие №14
 Общежитие №15
 Общежитие №16
+Город
 ```
 
 Selecting filters must update the listing results.
@@ -116,8 +122,9 @@ Selecting filters must update the listing results.
 
 ## Done When
 
-* Tags exist in the database.
+* Tags and locations exist in their database.
 * Listings can have multiple tags.
-* Users can filter listings by multiple tags.
+* Listing can have only one location.
+* Users can filter listings by multiple tags and locations.
 * Tags are displayed where appropriate.
 * Tests pass.

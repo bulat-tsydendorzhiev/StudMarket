@@ -14,12 +14,19 @@ export default function ListingEditPage() {
   })
 
   const mutation = useMutation({
-    mutationFn: (values: { title: string; description: string; price: number; tags: string[] }) =>
+    mutationFn: (values: {
+      title: string
+      description: string
+      price: number
+      tags: string[]
+      location: string | null
+    }) =>
       listingsApi.update(id!, {
         title: values.title,
         description: values.description,
         price: values.price,
         tags: values.tags,
+        location: values.location,
       }),
     onSuccess: (updated) => navigate(`/listings/${updated.id}`),
   })
@@ -43,6 +50,7 @@ export default function ListingEditPage() {
               description: listing.description,
               price: listing.price,
               tags: listing.tags,
+              location: listing.location,
             }}
             submitLabel="Сохранить изменения"
             submittingLabel="Сохранение…"

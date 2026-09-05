@@ -15,6 +15,13 @@ class Tag(Base):
     name: Mapped[str] = mapped_column(String(255), unique=True, index=True, nullable=False)
 
 
+class Location(Base):
+    __tablename__ = "locations"
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    name: Mapped[str] = mapped_column(String(255), unique=True, index=True, nullable=False)
+
+
 class ListingTag(Base):
     __tablename__ = "listing_tags"
 
@@ -44,11 +51,19 @@ class Listing(Base):
     expires_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
+    location_id: Mapped[uuid.UUID | None] = mapped_column(
+        Uuid, ForeignKey("locations.id", ondelete="SET NULL"), nullable=True
+    )
 
     tags: Mapped[list[Tag]] = relationship(
         secondary=ListingTag.__table__, order_by="Tag.name", lazy="selectin"
     )
+    location: Mapped[Location | None] = relationship(lazy="selectin")
 
     @property
     def tags_names(self) -> list[str]:
         return [tag.name for tag in self.tags]
+
+    @property
+    def location_name(self) -> str | None:
+        return self.location.name if self.location is not None else None

@@ -11,6 +11,13 @@ class TagResponse(BaseModel):
     name: str
 
 
+class LocationResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    name: str
+
+
 def _normalize_tags(values: list[str]) -> list[str]:
     normalized: list[str] = []
     seen: set[str] = set()
@@ -29,6 +36,7 @@ class ListingCreate(BaseModel):
     description: str
     price: float | None = None
     tags: list[str] = []
+    location: str | None = None
 
     @field_validator("title")
     @classmethod
@@ -58,12 +66,22 @@ class ListingCreate(BaseModel):
     def tags_valid(cls, value: list[str]) -> list[str]:
         return _normalize_tags(value)
 
+    @field_validator("location")
+    @classmethod
+    def location_not_blank(cls, value: str | None) -> str | None:
+        if value is not None:
+            value = value.strip()
+            if not value:
+                raise ValueError("location is required")
+        return value
+
 
 class ListingUpdate(BaseModel):
     title: str | None = None
     description: str | None = None
     price: float | None = None
     tags: list[str] | None = None
+    location: str | None = None
 
     @field_validator("title")
     @classmethod
@@ -97,6 +115,15 @@ class ListingUpdate(BaseModel):
             return _normalize_tags(value)
         return None
 
+    @field_validator("location")
+    @classmethod
+    def location_not_blank(cls, value: str | None) -> str | None:
+        if value is not None:
+            value = value.strip()
+            if not value:
+                raise ValueError("location is required")
+        return value
+
 
 class ListingResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -110,4 +137,5 @@ class ListingResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
     expires_at: datetime | None
+    location: str | None = Field(default=None, validation_alias="location_name")
     tags: list[str] = Field(validation_alias="tags_names")

@@ -137,6 +137,45 @@ body {
   cursor: pointer;
 }
 
+.filters__checkbox {
+  appearance: none;
+  -webkit-appearance: none;
+  display: inline-grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  border: 1px solid #c5cbd3;
+  border-radius: 4px;
+  background: #fff;
+  cursor: pointer;
+}
+
+.filters__checkbox::after {
+  content: '';
+  font-size: 12px;
+  line-height: 1;
+  font-weight: 700;
+}
+
+.filters__checkbox:checked {
+  border-color: #2e7d32;
+}
+
+.filters__checkbox:checked::after {
+  content: '✓';
+  color: #2e7d32;
+}
+
+.filters__checkbox--excluded {
+  border-color: #c62828;
+}
+
+.filters__checkbox--excluded::after {
+  content: '✕';
+  color: #c62828;
+}
+
 .home__status {
   margin-top: 24px;
   padding: 8px 16px;
@@ -403,7 +442,25 @@ body {
   border-radius: 8px;
 }
 
+.listing-form__field > select {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  padding: 10px 12px;
+  font-size: 15px;
+  font-family: inherit;
+  border: 1px solid #d3d8df;
+  border-radius: 8px;
+  background: #fff;
+}
+
 .listing-form__field > input:focus {
+  outline: 2px solid #1a5cff;
+  outline-offset: -1px;
+  border-color: #1a5cff;
+}
+
+.listing-form__field > select:focus {
   outline: 2px solid #1a5cff;
   outline-offset: -1px;
   border-color: #1a5cff;

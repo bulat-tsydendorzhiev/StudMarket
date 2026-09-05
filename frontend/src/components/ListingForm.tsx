@@ -1,19 +1,21 @@
 import { useState, type FormEvent } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import MarkdownEditor from './MarkdownEditor'
-import { tagsApi } from '../api/listings'
+import { locationsApi, tagsApi } from '../api/listings'
 
 export interface ListingFormValues {
   title: string
   description: string
   price: number
   tags: string[]
+  location: string | null
 }
 
 interface FieldErrors {
   title?: string
   description?: string
   price?: string
+  location?: string
 }
 
 interface ListingFormProps {
@@ -23,15 +25,6 @@ interface ListingFormProps {
   pending: boolean
   error: string
   onSubmit: (values: ListingFormValues) => void
-}
-
-function isDormitory(name: string): boolean {
-  return name.startsWith('Общежитие')
-}
-
-function dormitoryNumber(name: string): number {
-  const match = name.match(/№(\d+)/)
-  return match ? Number(match[1]) : Number.POSITIVE_INFINITY
 }
 
 export default function ListingForm({
@@ -50,6 +43,9 @@ export default function ListingForm({
   const [selectedTags, setSelectedTags] = useState<string[]>(
     initialValues?.tags ?? [],
   )
+  const [selectedLocation, setSelectedLocation] = useState<string>(
+    initialValues?.location ?? '',
+  )
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({})
 
   const { data: availableTags } = useQuery({
@@ -57,12 +53,14 @@ export default function ListingForm({
     queryFn: tagsApi.list,
   })
 
-  const categories = (availableTags ?? [])
-    .filter((tag) => !isDormitory(tag.name))
-    .sort((a, b) => a.name.localeCompare(b.name))
-  const dormitories = (availableTags ?? [])
-    .filter((tag) => isDormitory(tag.name))
-    .sort((a, b) => dormitoryNumber(a.name) - dormitoryNumber(b.name))
+  const { data: availableLocations } = useQuery({
+    queryKey: ['locations'],
+    queryFn: locationsApi.list,
+  })
+
+  const categories = (availableTags ?? []).sort((a, b) =>
+    a.name.localeCompare(b.name),
+  )
 
   const toggleTag = (name: string) => {
     setSelectedTags((prev) =>
@@ -95,6 +93,7 @@ export default function ListingForm({
       description: description.trim(),
       price: price ? parsedPrice : 0,
       tags: selectedTags,
+      location: selectedLocation ? selectedLocation : null,
     })
   }
 
@@ -143,13 +142,28 @@ export default function ListingForm({
         {fieldErrors.price && <span className="listing-form__error">{fieldErrors.price}</span>}
       </label>
 
+      <label className="listing-form__field">
+        <span>Локация</span>
+        <select
+          value={selectedLocation}
+          onChange={(e) => setSelectedLocation(e.target.value)}
+        >
+          <option value="">Не указана</option>
+          {(availableLocations ?? []).map((location) => (
+            <option value={location.name} key={location.id}>
+              {location.name}
+            </option>
+          ))}
+        </select>
+        {fieldErrors.location && (
+          <span className="listing-form__error">{fieldErrors.location}</span>
+        )}
+      </label>
+
       <fieldset className="listing-form__field listing-form__tags">
         <legend>Теги</legend>
         {categories.length > 0 && (
           <div className="listing-form__tag-group">{renderTagCheckboxes(categories)}</div>
-        )}
-        {dormitories.length > 0 && (
-          <div className="listing-form__tag-group">{renderTagCheckboxes(dormitories)}</div>
         )}
       </fieldset>
 

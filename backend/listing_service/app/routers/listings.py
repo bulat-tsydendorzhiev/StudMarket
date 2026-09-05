@@ -7,12 +7,15 @@ from sqlalchemy.orm import Session
 
 from ..config import settings
 from ..database import get_db
-from ..models import Listing, Tag
-from ..schemas import ListingCreate, ListingResponse, ListingUpdate, TagResponse
+from ..locations import sort_locations
+from ..models import Listing, Location, Tag
+from ..schemas import ListingCreate, ListingResponse, ListingUpdate, LocationResponse, TagResponse
 from ..security import decode_access_token
 from ..tags import sort_tags
 
 router = APIRouter(prefix="/listings", tags=["listings"])
+
+_UNSET = object()
 
 
 def _get_current_user_id(request: Request) -> uuid.UUID:
@@ -64,6 +67,24 @@ def _resolve_tags(tag_names: list[str], db: Session) -> list[Tag]:
     return [by_name[name] for name in tag_names]
 
 
+def _resolve_location(location_name: str | None, db: Session) -> Location | None:
+    if location_name is None:
+        return None
+    location = db.scalar(select(Location).where(Location.name == location_name))
+    if location is None:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail=f"Неизвестная локация: {location_name}",
+        )
+    return location
+
+
+@router.get("/locations", response_model=list[LocationResponse])
+def list_locations(db: Session = Depends(get_db)) -> list[Location]:
+    locations = db.scalars(select(Location)).all()
+    return sort_locations(list(locations))
+
+
 @router.get("/tags", response_model=list[TagResponse])
 def list_tags(db: Session = Depends(get_db)) -> list[Tag]:
     tags = db.scalars(select(Tag)).all()
@@ -86,6 +107,9 @@ def create_listing(
     db.add(listing)
     db.flush()
     listing.tags = _resolve_tags(payload.tags, db)
+    location = _resolve_location(payload.location, db)
+    if location is not None:
+        listing.location = location
     db.commit()
     db.refresh(listing)
     return listing
@@ -94,11 +118,19 @@ def create_listing(
 @router.get("", response_model=list[ListingResponse])
 def list_listings(
     tags: list[str] = Query(default=[]),
+    exclude_tags: list[str] = Query(default=[]),
+    location: list[str] = Query(default=[]),
     db: Session = Depends(get_db),
 ) -> list[Listing]:
     statement = select(Listing)
     for tag_name in tags:
         statement = statement.where(Listing.tags.any(Tag.name == tag_name.strip()))
+    for tag_name in exclude_tags:
+        statement = statement.where(~Listing.tags.any(Tag.name == tag_name.strip()))
+    if location:
+        statement = statement.where(
+            Listing.location.has(Location.name.in_([name.strip() for name in location]))
+        )
     statement = statement.order_by(Listing.created_at.desc(), Listing.id.desc())
     listings = db.scalars(statement).all()
     return list(listings)
@@ -127,10 +159,13 @@ def update_listing(
     if update_data.get("price") is None and "price" in update_data:
         update_data["price"] = 0.0
     tag_names = update_data.pop("tags", None)
+    location_value = update_data.pop("location", _UNSET)
     for field, value in update_data.items():
         setattr(listing, field, value)
     if tag_names is not None:
         listing.tags = _resolve_tags(tag_names, db)
+    if location_value is not _UNSET:
+        listing.location = _resolve_location(location_value, db)
     db.commit()
     db.refresh(listing)
     return listing

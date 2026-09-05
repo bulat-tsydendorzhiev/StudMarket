@@ -13,6 +13,7 @@ export default function ListingNewPage() {
         description: values.description,
         price: values.price,
         tags: values.tags,
+        location: values.location,
       }),
     onSuccess: (listing) => navigate(`/listings/${listing.id}`),
   })

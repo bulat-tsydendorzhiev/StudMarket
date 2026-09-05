@@ -3,7 +3,7 @@ import { render } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { vi } from 'vitest'
 import type { ReactNode } from 'react'
-import type { Listing, Tag } from './api/listings'
+import type { Listing, Location, Tag } from './api/listings'
 import { AuthProvider } from './auth/AuthContext'
 
 export interface MockRoute {
@@ -71,6 +71,7 @@ export function makeListing(overrides: Partial<Listing> = {}): Listing {
     created_at: '2026-09-05T00:00:00Z',
     updated_at: '2026-09-05T00:00:00Z',
     expires_at: null,
+    location: null,
     tags: [],
     ...overrides,
   }
@@ -80,16 +81,28 @@ export function makeTag(id: string, name: string): Tag {
   return { id, name }
 }
 
+export function makeLocation(id: string, name: string): Location {
+  return { id, name }
+}
+
 export const testTags: Tag[] = [
   makeTag('tag-electronics', 'Электроника'),
   makeTag('tag-appliances', 'Бытовая техника'),
   makeTag('tag-sport', 'Спорт'),
-  makeTag('tag-dorm-2', 'Общежитие №2'),
-  makeTag('tag-dorm-3', 'Общежитие №3'),
+]
+
+export const testLocations: Location[] = [
+  makeLocation('loc-dorm-2', 'Общежитие №2'),
+  makeLocation('loc-dorm-3', 'Общежитие №3'),
+  makeLocation('loc-city', 'Город'),
 ]
 
 export function tagsRoutes(): MockRoutes {
   return { 'GET /listings/tags': { status: 200, body: testTags } }
+}
+
+export function locationsRoutes(): MockRoutes {
+  return { 'GET /listings/locations': { status: 200, body: testLocations } }
 }
 
 export function guestAuthRoutes(): MockRoutes {

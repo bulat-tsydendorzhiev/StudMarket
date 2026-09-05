@@ -3,10 +3,11 @@ import { fireEvent, screen } from '@testing-library/react'
 import HomePage from './HomePage'
 import {
   authenticatedAuthRoutes,
+  locationsRoutes,
   makeListing,
   renderWithProviders,
   stubFetch,
-  testTags,
+  tagsRoutes,
 } from '../testHelpers'
 
 afterEach(() => {
@@ -71,10 +72,11 @@ describe('HomePage', () => {
     ).toBeInTheDocument()
   })
 
-  it('renders a filter panel with categories and dormitories', async () => {
+  it('renders a filter panel with categories and locations', async () => {
     stubFetch({
       ...authenticatedAuthRoutes(),
-      'GET /listings/tags': { status: 200, body: testTags },
+      ...tagsRoutes(),
+      ...locationsRoutes(),
       'GET /listings': { status: 200, body: [] },
     })
     renderWithProviders(<HomePage />)
@@ -84,6 +86,7 @@ describe('HomePage', () => {
     expect(screen.getByLabelText('Бытовая техника')).toBeInTheDocument()
     expect(screen.getByLabelText('Общежитие №2')).toBeInTheDocument()
     expect(screen.getByLabelText('Общежитие №3')).toBeInTheDocument()
+    expect(screen.getByLabelText('Город')).toBeInTheDocument()
 
     const groups = document.querySelectorAll('.filters__group')
     expect(groups.length).toBe(2)
@@ -94,7 +97,8 @@ describe('HomePage', () => {
   it('filters listings when a tag is selected', async () => {
     const fetchMock = stubFetch({
       ...authenticatedAuthRoutes(),
-      'GET /listings/tags': { status: 200, body: testTags },
+      ...tagsRoutes(),
+      ...locationsRoutes(),
       'GET /listings': {
         status: 200,
         body: [
@@ -122,10 +126,42 @@ describe('HomePage', () => {
     expect(taggedCall).toBeTruthy()
   })
 
-  it('clears the filter when a tag is deselected', async () => {
+  it('filters listings when a location is selected', async () => {
     const fetchMock = stubFetch({
       ...authenticatedAuthRoutes(),
-      'GET /listings/tags': { status: 200, body: testTags },
+      ...tagsRoutes(),
+      ...locationsRoutes(),
+      'GET /listings': {
+        status: 200,
+        body: [
+          makeListing({ id: 'listing-1', title: 'Велосипед' }),
+          makeListing({ id: 'listing-2', title: 'Учебник' }),
+        ],
+      },
+      'GET /listings?location=Общежитие%20№3': {
+        status: 200,
+        body: [makeListing({ id: 'listing-1', title: 'Телефон' })],
+      },
+    })
+    renderWithProviders(<HomePage />)
+
+    expect(await screen.findByText('Велосипед')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByLabelText('Общежитие №3'))
+
+    expect(await screen.findByText('Телефон')).toBeInTheDocument()
+    const calls = fetchMock.mock.calls.filter(([input, init]) =>
+      String(input).includes('/listings') && (init?.method ?? 'GET') === 'GET',
+    )
+    const locatedCall = calls.find(([input]) => String(input).includes('location='))
+    expect(locatedCall).toBeTruthy()
+  })
+
+  it('excludes listings on the second click and marks the checkbox with a cross', async () => {
+    const fetchMock = stubFetch({
+      ...authenticatedAuthRoutes(),
+      ...tagsRoutes(),
+      ...locationsRoutes(),
       'GET /listings': {
         status: 200,
         body: [makeListing({ id: 'listing-1', title: 'Велосипед' })],
@@ -134,6 +170,49 @@ describe('HomePage', () => {
         status: 200,
         body: [makeListing({ id: 'listing-1', title: 'Ноутбук' })],
       },
+      'GET /listings?exclude_tags=Электроника': {
+        status: 200,
+        body: [makeListing({ id: 'listing-2', title: 'Учебник' })],
+      },
+    })
+    renderWithProviders(<HomePage />)
+
+    expect(await screen.findByText('Велосипед')).toBeInTheDocument()
+
+    const checkbox = screen.getByLabelText('Электроника')
+    fireEvent.click(checkbox)
+    expect(await screen.findByText('Ноутбук')).toBeInTheDocument()
+    expect(checkbox).not.toHaveClass('filters__checkbox--excluded')
+
+    fireEvent.click(checkbox)
+    expect(await screen.findByText('Учебник')).toBeInTheDocument()
+    expect(screen.queryByText('Велосипед')).not.toBeInTheDocument()
+    expect(checkbox).toHaveClass('filters__checkbox--excluded')
+
+    const calls = fetchMock.mock.calls.filter(([input, init]) =>
+      String(input).includes('/listings') && (init?.method ?? 'GET') === 'GET',
+    )
+    const excludedCall = calls.find(([input]) => String(input).includes('exclude_tags='))
+    expect(excludedCall).toBeTruthy()
+  })
+
+  it('third click clears the tag filter and the cross', async () => {
+    const fetchMock = stubFetch({
+      ...authenticatedAuthRoutes(),
+      ...tagsRoutes(),
+      ...locationsRoutes(),
+      'GET /listings': {
+        status: 200,
+        body: [makeListing({ id: 'listing-1', title: 'Велосипед' })],
+      },
+      'GET /listings?tags=Электроника': {
+        status: 200,
+        body: [makeListing({ id: 'listing-1', title: 'Ноутбук' })],
+      },
+      'GET /listings?exclude_tags=Электроника': {
+        status: 200,
+        body: [makeListing({ id: 'listing-2', title: 'Учебник' })],
+      },
     })
     renderWithProviders(<HomePage />)
 
@@ -141,16 +220,19 @@ describe('HomePage', () => {
     fireEvent.click(checkbox)
     expect(await screen.findByText('Ноутбук')).toBeInTheDocument()
 
-    fireEvent.click(screen.getByLabelText('Электроника'))
-    expect(await screen.findByText('Велосипед')).toBeInTheDocument()
+    fireEvent.click(checkbox)
+    expect(await screen.findByText('Учебник')).toBeInTheDocument()
+    expect(checkbox).toHaveClass('filters__checkbox--excluded')
 
-    const taggedCalls = fetchMock.mock.calls.filter(([input, init]) =>
-      String(input).includes('tags=') && (init?.method ?? 'GET') === 'GET',
-    )
-    expect(taggedCalls.length).toBeGreaterThan(0)
+    fireEvent.click(checkbox)
+    expect(await screen.findByText('Велосипед')).toBeInTheDocument()
+    expect(checkbox).not.toHaveClass('filters__checkbox--excluded')
+
     const lastListCall = fetchMock.mock.calls.find(([input, init]) =>
       String(input).includes('/listings') && (init?.method ?? 'GET') === 'GET',
     )
-    expect(String(lastListCall?.[0])).not.toContain('tags=')
+    const lastUrl = String(lastListCall?.[0])
+    expect(lastUrl).not.toContain('tags=')
+    expect(lastUrl).not.toContain('exclude_tags=')
   })
 })

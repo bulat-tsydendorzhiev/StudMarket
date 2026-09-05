@@ -5,6 +5,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from app.database import Base, get_db
+from app.locations import seed_default_locations
 from app.main import app
 from app.tags import seed_default_tags
 
@@ -20,6 +21,7 @@ def db_session():
     Base.metadata.create_all(bind=engine)
     session = testing_session_local()
     seed_default_tags(session)
+    seed_default_locations(session)
     try:
         yield session
     finally:
