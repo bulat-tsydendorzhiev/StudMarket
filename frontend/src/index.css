@@ -290,14 +290,6 @@ body {
   font-weight: 600;
 }
 
-.listing-card__description {
-  font-size: 13px;
-  color: #666;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
 .listing-page {
   min-height: 100vh;
   display: flex;

@@ -89,9 +89,6 @@ export default function HomePage() {
                       {formatPrice(listing.price)}
                     </span>
                     <span className="listing-card__title">{listing.title}</span>
-                    <span className="listing-card__description">
-                      {listing.description}
-                    </span>
                   </div>
                 </Link>
               ))}

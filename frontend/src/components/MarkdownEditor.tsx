@@ -58,25 +58,6 @@ export default function MarkdownEditor({ value, onChange, rows = 5 }: MarkdownEd
       }
     })
 
-  const insertCode = () =>
-    run((start, end) => {
-      const selected = value.slice(start, end)
-      if (selected.includes('\n')) {
-        const inserted = '```\n' + (selected || 'код') + '\n```'
-        return {
-          value: value.slice(0, start) + inserted + value.slice(end),
-          selectionStart: start + '```\n'.length,
-          selectionEnd: start + inserted.length - '\n```'.length,
-        }
-      }
-      const insert = selected || 'код'
-      return {
-        value: value.slice(0, start) + '`' + insert + '`' + value.slice(end),
-        selectionStart: start + 1,
-        selectionEnd: start + 1 + insert.length,
-      }
-    })
-
   const insertLink = () =>
     run((start, end) => {
       const text = value.slice(start, end) || 'текст'
@@ -98,7 +79,6 @@ export default function MarkdownEditor({ value, onChange, rows = 5 }: MarkdownEd
       onClick: () => wrapInline('~~', '~~', 'зачёркнутый текст'),
     },
     { label: 'Цитата', symbol: '»', onClick: () => prefixLine('> ', 'Цитата') },
-    { label: 'Код', symbol: '</>', onClick: insertCode },
     { label: 'Ссылка', symbol: 'A→', onClick: insertLink },
     { label: 'Список', symbol: '•', onClick: () => prefixLine('- ', 'Пункт списка') },
     {
