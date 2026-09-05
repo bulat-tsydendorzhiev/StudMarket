@@ -1,22 +1,28 @@
-import { useEffect, useRef, useState } from 'react'
+import { Fragment, useEffect, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link, useParams } from 'react-router-dom'
-import ReactMarkdown from 'react-markdown'
 import { chatsApi, type Message } from '../api/chats'
 import { usersApi } from '../api/users'
 import { useAuth } from '../auth/AuthContext'
-import MarkdownEditor from '../components/MarkdownEditor'
 
 const POLL_INTERVAL_MS = 3000
 
 function formatTime(timestamp: string): string {
-  const date = new Date(timestamp)
-  return date.toLocaleString('ru-RU', {
-    day: '2-digit',
-    month: '2-digit',
-    year: '2-digit',
+  return new Date(timestamp).toLocaleTimeString('ru-RU', {
     hour: '2-digit',
     minute: '2-digit',
+  })
+}
+
+function dayKey(timestamp: string): string {
+  const date = new Date(timestamp)
+  return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`
+}
+
+function formatDay(timestamp: string): string {
+  return new Date(timestamp).toLocaleDateString('ru-RU', {
+    day: 'numeric',
+    month: 'long',
   })
 }
 
@@ -79,19 +85,31 @@ export default function ChatPage() {
     const sender = isMine ? 'Вы' : (otherUser?.username ?? 'Собеседник')
     return (
       <div
-        key={message.id}
         className={`chat__message chat__message--${isMine ? 'mine' : 'other'}`}
       >
         <div className="chat__bubble">
           <span className="chat__sender">{sender}</span>
-          <div className="chat__text markdown">
-            <ReactMarkdown>{message.text}</ReactMarkdown>
-          </div>
+          <p className="chat__text">{message.text}</p>
           <span className="chat__time">{formatTime(message.created_at)}</span>
         </div>
       </div>
     )
   }
+
+  const renderMessages = () =>
+    messages!.map((message, index) => {
+      const prev = index > 0 ? messages![index - 1] : null
+      const showDate =
+        !prev || dayKey(prev.created_at) !== dayKey(message.created_at)
+      return (
+        <Fragment key={message.id}>
+          {showDate && (
+            <div className="chat__date">{formatDay(message.created_at)}</div>
+          )}
+          {renderMessage(message)}
+        </Fragment>
+      )
+    })
 
   return (
     <div className="chat">
@@ -122,26 +140,37 @@ export default function ChatPage() {
           <>
             <div className="chat__list" ref={listRef}>
               {messages && messages.length > 0 ? (
-                messages.map(renderMessage)
+                renderMessages()
               ) : (
                 <p className="chat__empty">Сообщений пока нет</p>
               )}
             </div>
 
             <form className="chat__form" onSubmit={handleSubmit}>
-              <MarkdownEditor
-                value={text}
-                onChange={setText}
-                rows={3}
-                ariaLabel="Сообщение"
-              />
-              <div className="chat__form-actions">
+              <div className="chat__input-wrap">
+                <input
+                  className="chat__input"
+                  type="text"
+                  value={text}
+                  onChange={(event) => setText(event.target.value)}
+                  placeholder="Введите сообщение..."
+                  aria-label="Сообщение"
+                />
                 <button
-                  className="chat__submit"
+                  className="chat__send"
                   type="submit"
                   disabled={!text.trim() || sendMutation.isPending}
+                  aria-label="Отправить"
                 >
-                  {sendMutation.isPending ? 'Отправка…' : 'Отправить'}
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="20"
+                    height="20"
+                    fill="currentColor"
+                    aria-hidden="true"
+                  >
+                    <path d="M2.01 21 23 12 2.01 3 2 10l15 2-15 2z" />
+                  </svg>
                 </button>
               </div>
             </form>

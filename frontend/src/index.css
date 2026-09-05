@@ -778,6 +778,15 @@ body {
   font-size: 14px;
 }
 
+.chat__date {
+  align-self: center;
+  padding: 4px 12px;
+  font-size: 12px;
+  color: #5f6773;
+  background: #edf1f7;
+  border-radius: 12px;
+}
+
 .chat__message {
   display: flex;
 }
@@ -835,24 +844,46 @@ body {
   gap: 8px;
 }
 
-.chat__form-actions {
+.chat__input-wrap {
   display: flex;
-  justify-content: flex-end;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 6px 4px 16px;
+  background: #fff;
+  border: 1px solid #d3d8df;
+  border-radius: 999px;
 }
 
-.chat__submit {
-  padding: 10px 20px;
+.chat__input-wrap:focus-within {
+  border-color: #1a5cff;
+}
+
+.chat__input {
+  flex: 1;
+  padding: 8px 0;
   font-size: 15px;
-  font-weight: 600;
+  font-family: inherit;
+  border: none;
+  outline: none;
+  background: transparent;
+}
+
+.chat__send {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
   color: #fff;
   background: #1a5cff;
   border: none;
-  border-radius: 8px;
+  border-radius: 50%;
   cursor: pointer;
 }
 
-.chat__submit:disabled {
-  opacity: 0.6;
+.chat__send:disabled {
+  opacity: 0.4;
   cursor: default;
 }
 

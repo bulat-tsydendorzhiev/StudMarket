@@ -114,7 +114,7 @@ describe('ChatPage', () => {
     expect(screen.getAllByText('Вы').length).toBe(1)
   })
 
-  it('renders message text as markdown', async () => {
+  it('renders message text as plain text', async () => {
     stubFetch(
       baseRoutes({
         'GET /chat/conversations/conv-1/messages': {
@@ -134,8 +134,93 @@ describe('ChatPage', () => {
     )
     renderChatPage()
 
-    const strong = await screen.findByText('новый')
-    expect(strong.tagName).toBe('STRONG')
+    const text = await screen.findByText('Почти **новый** велосипед')
+    expect(text.tagName).toBe('P')
+    expect(text.querySelector('strong')).not.toBeInTheDocument()
+  })
+
+  it('shows only the time next to a message', async () => {
+    const TS = '2026-09-05T10:00:00Z'
+    const expectedTime = new Date(TS).toLocaleTimeString('ru-RU', {
+      hour: '2-digit',
+      minute: '2-digit',
+    })
+    const expectedDay = new Date(TS).toLocaleDateString('ru-RU', {
+      day: 'numeric',
+      month: 'long',
+    })
+    stubFetch(
+      baseRoutes({
+        'GET /chat/conversations/conv-1/messages': {
+          status: 200,
+          body: [
+            {
+              id: 'msg-1',
+              conversation_id: 'conv-1',
+              sender_id: OTHER_USER_ID,
+              text: 'Здравствуйте!',
+              created_at: TS,
+              read_at: null,
+            },
+          ],
+        },
+      }),
+    )
+    renderChatPage()
+
+    expect(await screen.findByText(expectedTime)).toBeInTheDocument()
+    expect(screen.queryByText('05.09.2026')).not.toBeInTheDocument()
+    expect(screen.queryByText('05.09.2026, 10:00')).not.toBeInTheDocument()
+    expect(screen.getByText(expectedDay)).toBeInTheDocument()
+  })
+
+  it('shows centered day separators between messages on different days', async () => {
+    const day1 = new Date('2026-09-05T10:00:00Z').toLocaleDateString('ru-RU', {
+      day: 'numeric',
+      month: 'long',
+    })
+    const day2 = new Date('2026-09-06T10:00:00Z').toLocaleDateString('ru-RU', {
+      day: 'numeric',
+      month: 'long',
+    })
+    stubFetch(
+      baseRoutes({
+        'GET /chat/conversations/conv-1/messages': {
+          status: 200,
+          body: [
+            {
+              id: 'msg-1',
+              conversation_id: 'conv-1',
+              sender_id: OTHER_USER_ID,
+              text: 'Здравствуйте!',
+              created_at: '2026-09-05T10:00:00Z',
+              read_at: null,
+            },
+            {
+              id: 'msg-2',
+              conversation_id: 'conv-1',
+              sender_id: currentUser.id,
+              text: 'Привет!',
+              created_at: '2026-09-05T10:05:00Z',
+              read_at: null,
+            },
+            {
+              id: 'msg-3',
+              conversation_id: 'conv-1',
+              sender_id: OTHER_USER_ID,
+              text: 'Актуально ещё?',
+              created_at: '2026-09-06T10:00:00Z',
+              read_at: null,
+            },
+          ],
+        },
+      }),
+    )
+    renderChatPage()
+
+    expect(await screen.findByText(day1)).toBeInTheDocument()
+    expect(screen.getByText(day2)).toBeInTheDocument()
+    expect(document.querySelectorAll('.chat__date')).toHaveLength(2)
   })
 
   it('distinguishes own and other messages visually', async () => {
