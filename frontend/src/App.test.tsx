@@ -214,6 +214,48 @@ describe('App', () => {
     expect(await screen.findByRole('heading', { name: 'Вход' })).toBeInTheDocument()
   })
 
+  it('redirects guests away from "/chat/:conversationId" to "/login"', async () => {
+    stubFetch(guestRoutes())
+    window.history.pushState({}, '', '/chat/conv-1')
+    renderApp()
+
+    expect(await screen.findByRole('heading', { name: 'Вход' })).toBeInTheDocument()
+  })
+
+  it('redirects guests away from "/chat" to "/login"', async () => {
+    stubFetch(guestRoutes())
+    window.history.pushState({}, '', '/chat')
+    renderApp()
+
+    expect(await screen.findByRole('heading', { name: 'Вход' })).toBeInTheDocument()
+  })
+
+  it('renders the chat list page for authenticated users', async () => {
+    stubFetch({
+      ...authenticatedRoutes(),
+      'GET /chat/conversations': { status: 200, body: [] },
+    })
+    window.history.pushState({}, '', '/chat')
+    renderApp()
+
+    expect(
+      await screen.findByText('Чатов пока нет'),
+    ).toBeInTheDocument()
+  })
+
+  it('renders the chat page for authenticated users', async () => {
+    stubFetch({
+      ...authenticatedRoutes(),
+      'GET /chat/conversations/conv-1/messages': { status: 200, body: [] },
+    })
+    window.history.pushState({}, '', '/chat/conv-1')
+    renderApp()
+
+    expect(
+      await screen.findByText('Сообщений пока нет'),
+    ).toBeInTheDocument()
+  })
+
   it('shows the authenticated UI on the home page after login', async () => {
     stubFetch({
       ...guestRoutes(),
