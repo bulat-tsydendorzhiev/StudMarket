@@ -46,7 +46,6 @@ Infrastructure:
 - Get authenticated user ID from JWT, never from request body.
 - Do not add RabbitMQ, Redis, S3 or Kubernetes.
 - Images are stored locally for now.
-- Dormitories are ordinary tags.
 - Users cannot create tags.
 - Do not create an interests table.
 - Chat notifications are based on unread messages.
