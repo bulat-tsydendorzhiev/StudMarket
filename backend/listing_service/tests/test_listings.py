@@ -208,6 +208,10 @@ def test_list_tags_returns_all_predefined_tags(client: TestClient) -> None:
         "Одежда",
         "Учеба",
         "Спорт",
+        "Посуда",
+        "Текстиль",
+        "Химия",
+        "Развлечения",
         "Другое",
     ]
 
