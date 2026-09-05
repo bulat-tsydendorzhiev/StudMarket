@@ -3,7 +3,7 @@ import { render } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { vi } from 'vitest'
 import type { ReactNode } from 'react'
-import type { Listing, Location, Tag } from './api/listings'
+import type { Listing, ListingImage, Location, Tag } from './api/listings'
 import { AuthProvider } from './auth/AuthContext'
 
 export interface MockRoute {
@@ -73,6 +73,18 @@ export function makeListing(overrides: Partial<Listing> = {}): Listing {
     expires_at: null,
     location: null,
     tags: [],
+    images: [],
+    ...overrides,
+  }
+}
+
+export function makeImage(overrides: Partial<ListingImage> = {}): ListingImage {
+  return {
+    id: 'image-1',
+    listing_id: 'listing-1',
+    position: 0,
+    created_at: '2026-09-05T00:00:00Z',
+    url: '/listings/listing-1/images/image-1',
     ...overrides,
   }
 }

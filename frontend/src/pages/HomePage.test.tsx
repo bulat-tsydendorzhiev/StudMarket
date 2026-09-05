@@ -4,6 +4,7 @@ import HomePage from './HomePage'
 import {
   authenticatedAuthRoutes,
   locationsRoutes,
+  makeImage,
   makeListing,
   renderWithProviders,
   stubFetch,
@@ -70,6 +71,29 @@ describe('HomePage', () => {
     expect(
       await screen.findByText('Не удалось загрузить объявления'),
     ).toBeInTheDocument()
+  })
+
+  it('displays the primary image on a listing card', async () => {
+    stubFetch({
+      ...authenticatedAuthRoutes(),
+      'GET /listings': {
+        status: 200,
+        body: [
+          makeListing({
+            id: 'listing-1',
+            title: 'Велосипед',
+            images: [makeImage()],
+          }),
+          makeListing({ id: 'listing-2', title: 'Учебник' }),
+        ],
+      },
+    })
+    renderWithProviders(<HomePage />)
+
+    await screen.findByText('Велосипед')
+    const primary = screen.getByAltText('Велосипед')
+    expect(primary).toHaveAttribute('src', expect.stringContaining('/listings/listing-1/images/image-1'))
+    expect(screen.getByText('Фото скоро появится')).toBeInTheDocument()
   })
 
   it('renders a filter panel with categories and locations', async () => {

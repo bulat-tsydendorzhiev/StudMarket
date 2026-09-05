@@ -59,9 +59,12 @@ services:
       SERVICE_NAME: listing-service
       DATABASE_URL: postgresql+psycopg://studmarket:studmarket@listing-db:5432/listing_db
       JWT_SECRET: ${JWT_SECRET:-dev-only-secret-change-me-in-production-0123456789}
+      UPLOAD_DIR: /uploads
     depends_on:
       listing-db:
         condition: service_healthy
+    volumes:
+      - listing-uploads:/uploads
     ports:
       - "8002:8000"
     networks: [backend]
@@ -105,3 +108,6 @@ services:
 networks:
   backend:
     driver: bridge
+
+volumes:
+  listing-uploads:

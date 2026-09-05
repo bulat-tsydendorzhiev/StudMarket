@@ -1,6 +1,7 @@
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { listingsApi } from '../api/listings'
+import ImageManager from '../components/ImageManager'
 import ListingForm from '../components/ListingForm'
 
 export default function ListingEditPage() {
@@ -58,6 +59,17 @@ export default function ListingEditPage() {
             error={mutation.isError ? 'Не удалось сохранить изменения' : ''}
             onSubmit={(values) => mutation.mutate(values)}
           />
+        )}
+
+        {listing && (
+          <section className="listing-edit__images">
+            <h2 className="listing-form__title">Фотографии</h2>
+            <ImageManager
+              listingId={listing.id}
+              images={listing.images ?? []}
+              owner
+            />
+          </section>
         )}
       </main>
     </div>

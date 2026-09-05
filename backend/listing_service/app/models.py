@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from decimal import Decimal
 
-from sqlalchemy import DateTime, ForeignKey, Numeric, String, Text, Uuid, func
+from sqlalchemy import DateTime, ForeignKey, Integer, Numeric, String, Text, Uuid, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .database import Base
@@ -33,6 +33,20 @@ class ListingTag(Base):
     )
 
 
+class ListingImage(Base):
+    __tablename__ = "listing_images"
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    listing_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid, ForeignKey("listings.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    file_path: Mapped[str] = mapped_column(String(512), nullable=False)
+    position: Mapped[int] = mapped_column(Integer, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+
 class Listing(Base):
     __tablename__ = "listings"
 
@@ -59,6 +73,9 @@ class Listing(Base):
         secondary=ListingTag.__table__, order_by="Tag.name", lazy="selectin"
     )
     location: Mapped[Location | None] = relationship(lazy="selectin")
+    images: Mapped[list[ListingImage]] = relationship(
+        order_by="ListingImage.position", lazy="selectin", cascade="all, delete-orphan"
+    )
 
     @property
     def tags_names(self) -> list[str]:

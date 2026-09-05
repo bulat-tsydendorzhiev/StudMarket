@@ -1,6 +1,6 @@
 import httpx
 from fastapi import APIRouter, HTTPException, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 
 from ..config import settings
 
@@ -48,6 +48,39 @@ async def create_listing(request: Request) -> JSONResponse:
 @router.get("")
 async def list_listings(request: Request) -> JSONResponse:
     return await _proxy("GET", "", request)
+
+
+@router.get("/{listing_id}/images")
+async def list_images(listing_id: str, request: Request) -> JSONResponse:
+    return await _proxy("GET", f"/{listing_id}/images", request)
+
+
+@router.post("/{listing_id}/images")
+async def upload_images(listing_id: str, request: Request) -> JSONResponse:
+    return await _proxy("POST", f"/{listing_id}/images", request)
+
+
+@router.get("/{listing_id}/images/{image_id}")
+async def get_image(listing_id: str, image_id: str, request: Request) -> Response:
+    url = (
+        f"{settings.listing_service_url}/listings/{listing_id}/images/{image_id}"
+    )
+    try:
+        async with httpx.AsyncClient(timeout=10) as client:
+            upstream = await client.get(url, cookies=request.cookies)
+    except httpx.HTTPError:
+        raise HTTPException(status_code=502, detail="Listing service unavailable")
+
+    return Response(
+        content=upstream.content,
+        status_code=upstream.status_code,
+        media_type=upstream.headers.get("content-type"),
+    )
+
+
+@router.delete("/{listing_id}/images/{image_id}")
+async def delete_image(listing_id: str, image_id: str, request: Request) -> JSONResponse:
+    return await _proxy("DELETE", f"/{listing_id}/images/{image_id}", request)
 
 
 @router.get("/{listing_id}")

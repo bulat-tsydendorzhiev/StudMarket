@@ -9,6 +9,8 @@ class Settings(BaseSettings):
     jwt_secret: str = "dev-only-secret-change-me-in-production-0123456789"
     jwt_algorithm: str = "HS256"
     jwt_cookie_name: str = "access_token"
+    upload_dir: str = "/uploads"
+    max_image_size_bytes: int = 5 * 1024 * 1024
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 

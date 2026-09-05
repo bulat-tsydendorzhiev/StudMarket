@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, computed_field, field_validator
 
 
 class TagResponse(BaseModel):
@@ -16,6 +16,20 @@ class LocationResponse(BaseModel):
 
     id: uuid.UUID
     name: str
+
+
+class ListingImageResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    listing_id: uuid.UUID
+    position: int
+    created_at: datetime
+
+    @computed_field
+    @property
+    def url(self) -> str:
+        return f"/listings/{self.listing_id}/images/{self.id}"
 
 
 def _normalize_tags(values: list[str]) -> list[str]:
@@ -139,3 +153,4 @@ class ListingResponse(BaseModel):
     expires_at: datetime | None
     location: str | None = Field(default=None, validation_alias="location_name")
     tags: list[str] = Field(validation_alias="tags_names")
+    images: list[ListingImageResponse] = Field(default_factory=list, validation_alias="images")

@@ -4,6 +4,7 @@ import ReactMarkdown from 'react-markdown'
 import { chatsApi } from '../api/chats'
 import { listingsApi } from '../api/listings'
 import { useAuth } from '../auth/AuthContext'
+import ImageManager from '../components/ImageManager'
 import { formatPrice } from './HomePage'
 
 export default function ListingDetailPage() {
@@ -50,7 +51,11 @@ export default function ListingDetailPage() {
       </header>
 
       <main className="listing-detail__main">
-        <div className="listing-detail__photo">Фото скоро появится</div>
+        <ImageManager
+          listingId={listing.id}
+          images={listing.images ?? []}
+          owner={isOwner}
+        />
 
         <h1 className="listing-detail__title">{listing.title}</h1>
         <p className="listing-detail__price">{formatPrice(listing.price)}</p>

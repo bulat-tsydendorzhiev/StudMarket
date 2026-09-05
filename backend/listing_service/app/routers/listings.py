@@ -11,6 +11,7 @@ from ..locations import sort_locations
 from ..models import Listing, Location, Tag
 from ..schemas import ListingCreate, ListingResponse, ListingUpdate, LocationResponse, TagResponse
 from ..security import decode_access_token
+from ..storage import storage as image_storage
 from ..tags import sort_tags
 
 router = APIRouter(prefix="/listings", tags=["listings"])
@@ -180,5 +181,7 @@ def delete_listing(
     user_id = _get_current_user_id(request)
     listing = _get_listing_or_404(listing_id, db)
     _ensure_owner(listing, user_id)
+    for image in listing.images:
+        image_storage.delete(image.file_path)
     db.delete(listing)
     db.commit()

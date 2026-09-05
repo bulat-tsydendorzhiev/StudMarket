@@ -32,7 +32,7 @@ def _parse_cookies(header: str) -> dict[str, str]:
     return cookies
 
 
-def _run_with_handler(handler, method, path, json_body=None, cookies=None):
+def _run_with_handler(handler, method, path, json_body=None, cookies=None, content=None, headers=None):
     upstream = _Upstream(handler)
     client = httpx.AsyncClient(transport=httpx.MockTransport(upstream.handle))
     with patch("app.routers.listings.httpx.AsyncClient", return_value=client):
@@ -42,6 +42,10 @@ def _run_with_handler(handler, method, path, json_body=None, cookies=None):
             kwargs["json"] = json_body
         if cookies:
             kwargs["cookies"] = cookies
+        if content is not None:
+            kwargs["content"] = content
+        if headers is not None:
+            kwargs["headers"] = headers
         response = test_client.request(method, path, **kwargs)
         return response, upstream
 
@@ -245,5 +249,109 @@ def test_listings_returns_502_when_listing_unavailable() -> None:
         raise httpx.ConnectError("boom")
 
     response, _ = _run_with_handler(boom, "GET", "/listings")
+
+    assert response.status_code == 502
+
+
+def _image_body(image_id: str = "img-1"):
+    return {
+        "id": image_id,
+        "listing_id": "uuid-1",
+        "position": 0,
+        "created_at": "2026-09-05T00:00:00Z",
+        "url": f"/listings/uuid-1/images/{image_id}",
+    }
+
+
+def test_list_listing_images_proxies() -> None:
+    images = [_image_body(), _image_body("img-2")]
+    response, upstream = _run_with_handler(
+        lambda _: httpx.Response(200, json=images),
+        "GET",
+        "/listings/uuid-1/images",
+    )
+
+    assert response.status_code == 200
+    assert response.json() == images
+    assert upstream.url.endswith("/listings/uuid-1/images")
+    assert "listing-service" in upstream.url
+
+
+def test_upload_images_forwards_multipart_body() -> None:
+    images = [_image_body()]
+    raw = (
+        "------test-boundary\r\n"
+        'Content-Disposition: form-data; name="files"; filename="photo.jpg"\r\n'
+        "Content-Type: image/jpeg\r\n\r\n"
+        "fake-jpeg\r\n"
+        "------test-boundary--\r\n"
+    )
+
+    response, upstream = _run_with_handler(
+        lambda _: httpx.Response(201, json=images),
+        "POST",
+        "/listings/uuid-1/images",
+        cookies={"access_token": "some-jwt"},
+        content=raw,
+        headers={"Content-Type": "multipart/form-data; boundary=----test-boundary"},
+    )
+
+    assert response.status_code == 201
+    assert response.json() == images
+    assert upstream.method == "POST"
+    assert upstream.url.endswith("/listings/uuid-1/images")
+    assert upstream.content == raw.encode()
+
+
+def test_get_listing_image_returns_binary() -> None:
+    def handler(request):
+        return httpx.Response(
+            200, content=b"\xff\xd8\xff\xe0fake", headers={"content-type": "image/jpeg"}
+        )
+
+    response, upstream = _run_with_handler(
+        handler,
+        "GET",
+        "/listings/uuid-1/images/img-1",
+    )
+
+    assert response.status_code == 200
+    assert response.content == b"\xff\xd8\xff\xe0fake"
+    assert response.headers["content-type"] == "image/jpeg"
+    assert upstream.url.endswith("/listings/uuid-1/images/img-1")
+
+
+def test_get_missing_image_passes_through_404() -> None:
+    def handler(request):
+        return httpx.Response(404, json={"detail": "Фото не найдено"})
+
+    response, _ = _run_with_handler(
+        handler,
+        "GET",
+        "/listings/uuid-1/images/missing",
+    )
+
+    assert response.status_code == 404
+    assert response.json() == {"detail": "Фото не найдено"}
+
+
+def test_delete_listing_image_proxies() -> None:
+    response, upstream = _run_with_handler(
+        lambda _: httpx.Response(204),
+        "DELETE",
+        "/listings/uuid-1/images/img-1",
+        cookies={"access_token": "some-jwt"},
+    )
+
+    assert response.status_code == 204
+    assert upstream.method == "DELETE"
+    assert upstream.url.endswith("/listings/uuid-1/images/img-1")
+
+
+def test_listing_images_returns_502_when_unavailable() -> None:
+    def boom(_):
+        raise httpx.ConnectError("boom")
+
+    response, _ = _run_with_handler(boom, "GET", "/listings/uuid-1/images")
 
     assert response.status_code == 502
