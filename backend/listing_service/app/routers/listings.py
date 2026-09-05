@@ -1,17 +1,21 @@
 import uuid
 
 import jwt
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from ..config import settings
 from ..database import get_db
-from ..models import Listing
-from ..schemas import ListingCreate, ListingResponse, ListingUpdate
+from ..locations import sort_locations
+from ..models import Listing, Location, Tag
+from ..schemas import ListingCreate, ListingResponse, ListingUpdate, LocationResponse, TagResponse
 from ..security import decode_access_token
+from ..tags import sort_tags
 
 router = APIRouter(prefix="/listings", tags=["listings"])
+
+_UNSET = object()
 
 
 def _get_current_user_id(request: Request) -> uuid.UUID:
@@ -49,6 +53,44 @@ def _ensure_owner(listing: Listing, user_id: uuid.UUID) -> None:
         )
 
 
+def _resolve_tags(tag_names: list[str], db: Session) -> list[Tag]:
+    if not tag_names:
+        return []
+    tags = db.scalars(select(Tag).where(Tag.name.in_(tag_names))).all()
+    by_name = {tag.name: tag for tag in tags}
+    unknown = [name for name in tag_names if name not in by_name]
+    if unknown:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail=f"Неизвестные теги: {', '.join(unknown)}",
+        )
+    return [by_name[name] for name in tag_names]
+
+
+def _resolve_location(location_name: str | None, db: Session) -> Location | None:
+    if location_name is None:
+        return None
+    location = db.scalar(select(Location).where(Location.name == location_name))
+    if location is None:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail=f"Неизвестная локация: {location_name}",
+        )
+    return location
+
+
+@router.get("/locations", response_model=list[LocationResponse])
+def list_locations(db: Session = Depends(get_db)) -> list[Location]:
+    locations = db.scalars(select(Location)).all()
+    return sort_locations(list(locations))
+
+
+@router.get("/tags", response_model=list[TagResponse])
+def list_tags(db: Session = Depends(get_db)) -> list[Tag]:
+    tags = db.scalars(select(Tag)).all()
+    return sort_tags(list(tags))
+
+
 @router.post("", response_model=ListingResponse, status_code=status.HTTP_201_CREATED)
 def create_listing(
     payload: ListingCreate,
@@ -63,16 +105,34 @@ def create_listing(
         price=0.0 if payload.price is None else payload.price,
     )
     db.add(listing)
+    db.flush()
+    listing.tags = _resolve_tags(payload.tags, db)
+    location = _resolve_location(payload.location, db)
+    if location is not None:
+        listing.location = location
     db.commit()
     db.refresh(listing)
     return listing
 
 
 @router.get("", response_model=list[ListingResponse])
-def list_listings(db: Session = Depends(get_db)) -> list[Listing]:
-    listings = db.scalars(
-        select(Listing).order_by(Listing.created_at.desc(), Listing.id.desc())
-    ).all()
+def list_listings(
+    tags: list[str] = Query(default=[]),
+    exclude_tags: list[str] = Query(default=[]),
+    location: list[str] = Query(default=[]),
+    db: Session = Depends(get_db),
+) -> list[Listing]:
+    statement = select(Listing)
+    for tag_name in tags:
+        statement = statement.where(Listing.tags.any(Tag.name == tag_name.strip()))
+    for tag_name in exclude_tags:
+        statement = statement.where(~Listing.tags.any(Tag.name == tag_name.strip()))
+    if location:
+        statement = statement.where(
+            Listing.location.has(Location.name.in_([name.strip() for name in location]))
+        )
+    statement = statement.order_by(Listing.created_at.desc(), Listing.id.desc())
+    listings = db.scalars(statement).all()
     return list(listings)
 
 
@@ -98,8 +158,14 @@ def update_listing(
     update_data = payload.model_dump(exclude_unset=True)
     if update_data.get("price") is None and "price" in update_data:
         update_data["price"] = 0.0
+    tag_names = update_data.pop("tags", None)
+    location_value = update_data.pop("location", _UNSET)
     for field, value in update_data.items():
         setattr(listing, field, value)
+    if tag_names is not None:
+        listing.tags = _resolve_tags(tag_names, db)
+    if location_value is not _UNSET:
+        listing.location = _resolve_location(location_value, db)
     db.commit()
     db.refresh(listing)
     return listing

@@ -36,6 +36,7 @@
 
 - listing_id FK
 - tag_id FK
+- location_id
 
 PK(listing_id, tag_id)
 
@@ -47,6 +48,10 @@ PK(listing_id, tag_id)
 - position
 - created_at
 
+### locations
+
+- id PK
+- name
 
 ## Chat DB
 

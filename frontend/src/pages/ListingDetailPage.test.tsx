@@ -75,6 +75,45 @@ describe('ListingDetailPage', () => {
     expect(screen.getByText('Бесплатно')).toBeInTheDocument()
   })
 
+  it('shows the tags of the listing', async () => {
+    stubFetch({
+      ...guestAuthRoutes(),
+      'GET /listings/listing-1': {
+        status: 200,
+        body: makeListing({ tags: ['Электроника', 'Спорт'] }),
+      },
+    })
+    renderDetailPage()
+
+    expect(await screen.findByText('Электроника')).toBeInTheDocument()
+    expect(screen.getByText('Спорт')).toBeInTheDocument()
+  })
+
+  it('shows the location of the listing', async () => {
+    stubFetch({
+      ...guestAuthRoutes(),
+      'GET /listings/listing-1': {
+        status: 200,
+        body: makeListing({ location: 'Общежитие №3' }),
+      },
+    })
+    renderDetailPage()
+
+    expect(await screen.findByText('Общежитие №3')).toBeInTheDocument()
+    expect(screen.getByText('Локация')).toBeInTheDocument()
+  })
+
+  it('does not show location section when absent', async () => {
+    stubFetch({
+      ...guestAuthRoutes(),
+      'GET /listings/listing-1': { status: 200, body: makeListing() },
+    })
+    renderDetailPage()
+
+    await screen.findByText('Велосипед')
+    expect(screen.queryByText('Локация')).not.toBeInTheDocument()
+  })
+
   it('shows edit and delete controls for the owner', async () => {
     stubFetch({
       ...authenticatedAuthRoutes(),

@@ -3,7 +3,7 @@ import { render } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { vi } from 'vitest'
 import type { ReactNode } from 'react'
-import type { Listing } from './api/listings'
+import type { Listing, Location, Tag } from './api/listings'
 import { AuthProvider } from './auth/AuthContext'
 
 export interface MockRoute {
@@ -22,11 +22,29 @@ export function jsonResponse(status: number, body?: unknown) {
 
 export function stubFetch(routes: MockRoutes) {
   const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
-    const url = String(input)
+    const url = new URL(String(input), 'http://localhost')
     const method = init?.method ?? 'GET'
     for (const [key, route] of Object.entries(routes)) {
       const [routeMethod, routePath] = key.split(' ')
-      if (url.endsWith(routePath) && method === routeMethod) {
+      if (method !== routeMethod) {
+        continue
+      }
+      const [pathPart, queryPart] = routePath.split('?')
+      if (url.pathname !== pathPart) {
+        continue
+      }
+      if (queryPart === undefined) {
+        if (url.search === '') {
+          return Promise.resolve(jsonResponse(route.status, route.body))
+        }
+        continue
+      }
+      const expected = [...new URLSearchParams(queryPart).entries()]
+      const actual = [...url.searchParams.entries()]
+      const queryMatches =
+        expected.length === actual.length &&
+        expected.every(([keyParam, value]) => url.searchParams.get(keyParam) === value)
+      if (queryMatches) {
         return Promise.resolve(jsonResponse(route.status, route.body))
       }
     }
@@ -53,8 +71,38 @@ export function makeListing(overrides: Partial<Listing> = {}): Listing {
     created_at: '2026-09-05T00:00:00Z',
     updated_at: '2026-09-05T00:00:00Z',
     expires_at: null,
+    location: null,
+    tags: [],
     ...overrides,
   }
+}
+
+export function makeTag(id: string, name: string): Tag {
+  return { id, name }
+}
+
+export function makeLocation(id: string, name: string): Location {
+  return { id, name }
+}
+
+export const testTags: Tag[] = [
+  makeTag('tag-electronics', 'Электроника'),
+  makeTag('tag-appliances', 'Бытовая техника'),
+  makeTag('tag-sport', 'Спорт'),
+]
+
+export const testLocations: Location[] = [
+  makeLocation('loc-dorm-2', 'Общежитие №2'),
+  makeLocation('loc-dorm-3', 'Общежитие №3'),
+  makeLocation('loc-city', 'Город'),
+]
+
+export function tagsRoutes(): MockRoutes {
+  return { 'GET /listings/tags': { status: 200, body: testTags } }
+}
+
+export function locationsRoutes(): MockRoutes {
+  return { 'GET /listings/locations': { status: 200, body: testLocations } }
 }
 
 export function guestAuthRoutes(): MockRoutes {

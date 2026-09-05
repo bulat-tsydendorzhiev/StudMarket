@@ -1,13 +1,42 @@
 import uuid
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+
+class TagResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    name: str
+
+
+class LocationResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    name: str
+
+
+def _normalize_tags(values: list[str]) -> list[str]:
+    normalized: list[str] = []
+    seen: set[str] = set()
+    for value in values:
+        name = value.strip()
+        if not name:
+            raise ValueError("tag name is required")
+        if name not in seen:
+            seen.add(name)
+            normalized.append(name)
+    return normalized
 
 
 class ListingCreate(BaseModel):
     title: str
     description: str
     price: float | None = None
+    tags: list[str] = []
+    location: str | None = None
 
     @field_validator("title")
     @classmethod
@@ -32,11 +61,27 @@ class ListingCreate(BaseModel):
             raise ValueError("price must be non-negative")
         return value
 
+    @field_validator("tags")
+    @classmethod
+    def tags_valid(cls, value: list[str]) -> list[str]:
+        return _normalize_tags(value)
+
+    @field_validator("location")
+    @classmethod
+    def location_not_blank(cls, value: str | None) -> str | None:
+        if value is not None:
+            value = value.strip()
+            if not value:
+                raise ValueError("location is required")
+        return value
+
 
 class ListingUpdate(BaseModel):
     title: str | None = None
     description: str | None = None
     price: float | None = None
+    tags: list[str] | None = None
+    location: str | None = None
 
     @field_validator("title")
     @classmethod
@@ -63,6 +108,22 @@ class ListingUpdate(BaseModel):
             raise ValueError("price must be non-negative")
         return value
 
+    @field_validator("tags")
+    @classmethod
+    def tags_valid(cls, value: list[str] | None) -> list[str] | None:
+        if value is not None:
+            return _normalize_tags(value)
+        return None
+
+    @field_validator("location")
+    @classmethod
+    def location_not_blank(cls, value: str | None) -> str | None:
+        if value is not None:
+            value = value.strip()
+            if not value:
+                raise ValueError("location is required")
+        return value
+
 
 class ListingResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -76,3 +137,5 @@ class ListingResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
     expires_at: datetime | None
+    location: str | None = Field(default=None, validation_alias="location_name")
+    tags: list[str] = Field(validation_alias="tags_names")
