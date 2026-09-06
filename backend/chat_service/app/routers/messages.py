@@ -1,8 +1,9 @@
 import uuid
+from datetime import datetime, timezone
 
 import jwt
 from fastapi import APIRouter, Depends, HTTPException, Request, status
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
 from ..config import settings
@@ -79,7 +80,7 @@ def send_message(
     db: Session = Depends(get_db),
 ) -> Message:
     user_id = _get_current_user_id(request)
-    _get_participant_conversation(db, conversation_id, user_id)
+    conversation = _get_participant_conversation(db, conversation_id, user_id)
 
     text = payload.text.strip()
     if not text:
@@ -88,6 +89,7 @@ def send_message(
             detail="Сообщение не может быть пустым",
         )
 
+    conversation.updated_at = datetime.now(timezone.utc)
     message = Message(
         conversation_id=conversation_id,
         sender_id=user_id,
@@ -97,3 +99,27 @@ def send_message(
     db.commit()
     db.refresh(message)
     return message
+
+
+@router.patch(
+    "/{conversation_id}/read",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+def mark_conversation_read(
+    conversation_id: uuid.UUID,
+    request: Request,
+    db: Session = Depends(get_db),
+) -> None:
+    user_id = _get_current_user_id(request)
+    _get_participant_conversation(db, conversation_id, user_id)
+
+    db.execute(
+        update(Message)
+        .where(
+            Message.conversation_id == conversation_id,
+            Message.sender_id != user_id,
+            Message.read_at.is_(None),
+        )
+        .values(read_at=datetime.now(timezone.utc))
+    )
+    db.commit()

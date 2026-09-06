@@ -324,4 +324,42 @@ describe('ChatPage', () => {
     await screen.findByText('Сообщений пока нет')
     expect(screen.getByRole('button', { name: 'Отправить' })).toBeDisabled()
   })
+
+  it('marks messages as read when the chat opens', async () => {
+    let readCalled = false
+    const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input)
+      const method = init?.method ?? 'GET'
+      const respond = (status: number, body?: unknown) =>
+        Promise.resolve(
+          new Response(body === undefined ? null : JSON.stringify(body), {
+            status,
+            headers: { 'Content-Type': 'application/json' },
+          }),
+        )
+      if (url.endsWith('/chat/conversations/conv-1/read') && method === 'PATCH') {
+        readCalled = true
+        return respond(204)
+      }
+      if (url.endsWith('/chat/conversations/conv-1/messages') && method === 'GET') {
+        return respond(200, [])
+      }
+      if (url.endsWith('/chat/conversations/conv-1') && method === 'GET') {
+        return respond(200, conversation())
+      }
+      if (url.endsWith('/auth/users/user-other') && method === 'GET') {
+        return respond(200, { id: OTHER_USER_ID, username: OTHER_USERNAME })
+      }
+      if (url.endsWith('/auth/me') && method === 'GET') {
+        return respond(200, currentUser)
+      }
+      return respond(404)
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    renderChatPage()
+
+    await screen.findByText('Сообщений пока нет')
+    expect(readCalled).toBe(true)
+  })
 })

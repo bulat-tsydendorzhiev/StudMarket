@@ -6,6 +6,7 @@ import ListingForm, {
   PAID_EXPIRATION_DAYS,
   type ListingFormValues,
 } from '../components/ListingForm'
+import MessagesLink from '../components/MessagesLink'
 import PhotoPicker from '../components/PhotoPicker'
 
 export default function ListingNewPage() {
@@ -36,6 +37,7 @@ export default function ListingNewPage() {
         <Link className="listing-page__logo" to="/">
           StudMarket
         </Link>
+        <MessagesLink />
       </header>
 
       <main className="listing-page__main">

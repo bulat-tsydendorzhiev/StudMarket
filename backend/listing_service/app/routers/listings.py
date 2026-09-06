@@ -134,6 +134,7 @@ def list_listings(
     tags: list[str] = Query(default=[]),
     exclude_tags: list[str] = Query(default=[]),
     location: list[str] = Query(default=[]),
+    ids: list[uuid.UUID] = Query(default=[]),
     db: Session = Depends(get_db),
 ) -> list[Listing]:
     statement = (
@@ -151,6 +152,8 @@ def list_listings(
         statement = statement.where(
             Listing.location.has(Location.name.in_([name.strip() for name in location]))
         )
+    if ids:
+        statement = statement.where(Listing.id.in_(ids))
     statement = statement.order_by(Listing.created_at.desc(), Listing.id.desc())
     listings = db.scalars(statement).all()
     return list(listings)
