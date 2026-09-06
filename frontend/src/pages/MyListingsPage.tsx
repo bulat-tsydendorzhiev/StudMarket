@@ -1,7 +1,8 @@
 import { useQuery } from '@tanstack/react-query'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { imageUrl, listingsApi } from '../api/listings'
 import MessagesLink from '../components/MessagesLink'
+import SearchBar from '../components/SearchBar'
 import UserAvatar from '../components/UserAvatar'
 import { formatPrice } from './HomePage'
 
@@ -19,10 +20,19 @@ function formatDate(value: string | null): string {
 }
 
 export default function MyListingsPage() {
-  const { data: listings, isLoading, isError } = useQuery({
+  const [searchParams] = useSearchParams()
+  const query = searchParams.get('q') ?? ''
+
+  const { data: allListings, isLoading, isError } = useQuery({
     queryKey: ['listings', 'mine'],
     queryFn: listingsApi.listMine,
   })
+
+  const listings = query
+    ? allListings?.filter((l) =>
+        l.title.toLowerCase().includes(query.toLowerCase()),
+      )
+    : allListings
 
   return (
     <div className="my-listings">
@@ -30,6 +40,7 @@ export default function MyListingsPage() {
         <Link className="listing-page__logo" to="/">
           StudMarket
         </Link>
+        <SearchBar searchBase="/my-listings" defaultValue={query} />
         <MessagesLink />
         <UserAvatar />
       </header>

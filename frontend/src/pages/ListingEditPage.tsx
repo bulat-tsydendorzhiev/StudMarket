@@ -4,6 +4,7 @@ import { listingsApi } from '../api/listings'
 import ImageManager from '../components/ImageManager'
 import ListingForm, { type ListingFormValues } from '../components/ListingForm'
 import MessagesLink from '../components/MessagesLink'
+import SearchBar from '../components/SearchBar'
 import UserAvatar from '../components/UserAvatar'
 
 export default function ListingEditPage() {
@@ -34,6 +35,7 @@ export default function ListingEditPage() {
         <Link className="listing-page__logo" to="/">
           Stud<span className="brand__market">Market</span>
         </Link>
+        <SearchBar />
         <MessagesLink />
         <UserAvatar />
       </header>

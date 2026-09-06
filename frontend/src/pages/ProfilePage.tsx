@@ -4,6 +4,7 @@ import { ApiError } from '../api/client'
 import { profileApi, type ProfileUpdate } from '../api/auth'
 import { useAuth, type CurrentUser } from '../auth/AuthContext'
 import MessagesLink from '../components/MessagesLink'
+import SearchBar from '../components/SearchBar'
 import UserAvatar, {
   avatarSrc,
   AVATAR_PRESETS,
@@ -126,6 +127,7 @@ function ProfileForm({ user }: { user: CurrentUser }) {
         <Link className="listing-page__logo" to="/">
           StudMarket
         </Link>
+        <SearchBar />
         <MessagesLink />
         <UserAvatar />
       </header>

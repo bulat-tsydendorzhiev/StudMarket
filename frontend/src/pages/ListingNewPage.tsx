@@ -8,6 +8,7 @@ import ListingForm, {
 } from '../components/ListingForm'
 import MessagesLink from '../components/MessagesLink'
 import PhotoPicker from '../components/PhotoPicker'
+import SearchBar from '../components/SearchBar'
 import UserAvatar from '../components/UserAvatar'
 
 export default function ListingNewPage() {
@@ -38,6 +39,7 @@ export default function ListingNewPage() {
         <Link className="listing-page__logo" to="/">
           Stud<span className="brand__market">Market</span>
         </Link>
+        <SearchBar />
         <MessagesLink />
         <UserAvatar />
       </header>
