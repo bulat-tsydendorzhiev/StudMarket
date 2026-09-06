@@ -3,6 +3,7 @@ import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { Route, Routes } from 'react-router-dom'
 import ListingEditPage from './ListingEditPage'
 import ListingNewPage from './ListingNewPage'
+import ListingPaymentPage from './ListingPaymentPage'
 import {
   authenticatedAuthRoutes,
   guestAuthRoutes,
@@ -18,6 +19,7 @@ function renderNewPage() {
   return renderWithProviders(
     <Routes>
       <Route path="/listings/new" element={<ListingNewPage />} />
+      <Route path="/listings/payment" element={<ListingPaymentPage />} />
       <Route path="/listings/:id" element={<div>Listing Page</div>} />
     </Routes>,
     ['/listings/new'],
@@ -59,7 +61,81 @@ describe('ListingNewPage', () => {
     expect(screen.getByLabelText('Описание')).toBeInTheDocument()
     expect(screen.getByLabelText(/Цена, ₽/)).toBeInTheDocument()
     expect(screen.getByLabelText('Локация')).toBeInTheDocument()
+    expect(screen.getByRole('radio', { name: '1 день' })).toBeInTheDocument()
+    expect(screen.getByRole('radio', { name: '7 дней' })).toBeInTheDocument()
+    expect(screen.getByRole('radio', { name: '30 дней' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Создать объявление' })).toBeInTheDocument()
+  })
+
+  it('selects 7 days by default', () => {
+    stubFetch(guestAuthRoutes())
+    renderNewPage()
+
+    expect(screen.getByRole('radio', { name: '7 дней' })).toBeChecked()
+    expect(screen.getByRole('radio', { name: '1 день' })).not.toBeChecked()
+    expect(screen.getByRole('radio', { name: '30 дней' })).not.toBeChecked()
+  })
+
+  it('shows a payment notice when the 30-day option is selected', () => {
+    stubFetch(guestAuthRoutes())
+    renderNewPage()
+
+    expect(
+      screen.queryByText(/Размещение на 30 дней платное/),
+    ).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('radio', { name: '30 дней' }))
+
+    expect(
+      screen.getByText(/Размещение на 30 дней платное/),
+    ).toBeInTheDocument()
+  })
+
+  it('redirects to the payment page for the 30-day option without creating a listing', async () => {
+    const fetchMock = stubFetch(guestAuthRoutes())
+    renderNewPage()
+
+    fireEvent.click(screen.getByRole('radio', { name: '30 дней' }))
+    fillForm()
+    fireEvent.click(screen.getByRole('button', { name: 'Создать объявление' }))
+
+    expect(
+      await screen.findByRole('heading', { name: 'Оплата размещения' }),
+    ).toBeInTheDocument()
+    const createCall = fetchMock.mock.calls.find(([input]) =>
+      String(input).endsWith('/listings'),
+    )
+    expect(createCall).toBeUndefined()
+  })
+
+  it('submits the chosen expiration duration', async () => {
+    const fetchMock = stubFetch({
+      ...guestAuthRoutes(),
+      'POST /listings': {
+        status: 201,
+        body: makeListing({ id: 'listing-new' }),
+      },
+    })
+    renderNewPage()
+
+    fireEvent.click(screen.getByRole('radio', { name: '1 день' }))
+    fillForm()
+    fireEvent.click(screen.getByRole('button', { name: 'Создать объявление' }))
+
+    expect(await screen.findByText('Listing Page')).toBeInTheDocument()
+
+    const createCall = fetchMock.mock.calls.find(([input]) =>
+      String(input).endsWith('/listings'),
+    )
+    const body = JSON.parse(createCall?.[1]?.body as string) as Record<string, unknown>
+    expect(body).toEqual({
+      title: 'Велосипед',
+      description: 'Почти новый',
+      price: 1500,
+      tags: [],
+      location: null,
+      expires_in_days: 1,
+    })
   })
 
   it('creates a listing and navigates to it', async () => {
@@ -87,6 +163,7 @@ describe('ListingNewPage', () => {
       price: 1500,
       tags: [],
       location: null,
+      expires_in_days: 7,
     })
   })
 
@@ -115,6 +192,7 @@ describe('ListingNewPage', () => {
       price: 0,
       tags: [],
       location: null,
+      expires_in_days: 7,
     })
   })
 
@@ -220,6 +298,7 @@ describe('ListingNewPage', () => {
       price: 1500,
       tags: ['Электроника', 'Спорт'],
       location: 'Общежитие №3',
+      expires_in_days: 7,
     })
   })
 

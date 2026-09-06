@@ -2,7 +2,7 @@ import { useMutation, useQuery } from '@tanstack/react-query'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { listingsApi } from '../api/listings'
 import ImageManager from '../components/ImageManager'
-import ListingForm from '../components/ListingForm'
+import ListingForm, { type ListingFormValues } from '../components/ListingForm'
 import MessagesLink from '../components/MessagesLink'
 
 export default function ListingEditPage() {
@@ -16,13 +16,7 @@ export default function ListingEditPage() {
   })
 
   const mutation = useMutation({
-    mutationFn: (values: {
-      title: string
-      description: string
-      price: number
-      tags: string[]
-      location: string | null
-    }) =>
+    mutationFn: (values: ListingFormValues) =>
       listingsApi.update(id!, {
         title: values.title,
         description: values.description,
@@ -54,7 +48,9 @@ export default function ListingEditPage() {
               price: listing.price,
               tags: listing.tags,
               location: listing.location,
+              expiresInDays: 7,
             }}
+            showExpiration={false}
             submitLabel="Сохранить изменения"
             submittingLabel="Сохранение…"
             pending={mutation.isPending}

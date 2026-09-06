@@ -3,12 +3,23 @@ import { useQuery } from '@tanstack/react-query'
 import MarkdownEditor from './MarkdownEditor'
 import { locationsApi, tagsApi } from '../api/listings'
 
+export const EXPIRATION_OPTIONS = [
+  { value: 1, label: '1 день' },
+  { value: 7, label: '7 дней' },
+  { value: 30, label: '30 дней' },
+]
+
+export const PAID_EXPIRATION_DAYS = 30
+
+export const DEFAULT_EXPIRATION_DAYS = 7
+
 export interface ListingFormValues {
   title: string
   description: string
   price: number
   tags: string[]
   location: string | null
+  expiresInDays: number
 }
 
 interface FieldErrors {
@@ -24,6 +35,7 @@ interface ListingFormProps {
   submittingLabel: string
   pending: boolean
   error: string
+  showExpiration?: boolean
   onSubmit: (values: ListingFormValues) => void
 }
 
@@ -33,6 +45,7 @@ export default function ListingForm({
   submittingLabel,
   pending,
   error,
+  showExpiration = true,
   onSubmit,
 }: ListingFormProps) {
   const [title, setTitle] = useState(initialValues?.title ?? '')
@@ -45,6 +58,9 @@ export default function ListingForm({
   )
   const [selectedLocation, setSelectedLocation] = useState<string>(
     initialValues?.location ?? '',
+  )
+  const [expiresInDays, setExpiresInDays] = useState(
+    initialValues?.expiresInDays ?? DEFAULT_EXPIRATION_DAYS,
   )
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({})
 
@@ -94,6 +110,7 @@ export default function ListingForm({
       price: price ? parsedPrice : 0,
       tags: selectedTags,
       location: selectedLocation ? selectedLocation : null,
+      expiresInDays,
     })
   }
 
@@ -159,6 +176,32 @@ export default function ListingForm({
           <span className="listing-form__error">{fieldErrors.location}</span>
         )}
       </label>
+
+      {showExpiration && (
+        <fieldset className="listing-form__field listing-form__expiration">
+          <legend>Срок размещения</legend>
+          <div className="listing-form__tag-group">
+            {EXPIRATION_OPTIONS.map((option) => (
+              <label className="listing-form__tag" key={option.value}>
+                <input
+                  type="radio"
+                  name="expiresInDays"
+                  value={option.value}
+                  checked={expiresInDays === option.value}
+                  onChange={() => setExpiresInDays(option.value)}
+                />
+                <span>{option.label}</span>
+              </label>
+            ))}
+          </div>
+        </fieldset>
+      )}
+
+      {showExpiration && expiresInDays === PAID_EXPIRATION_DAYS && (
+        <p className="listing-form__expiration-info" role="status">
+          Размещение на 30 дней платное — после нажатия «Создать объявление» нужно будет оплатить размещение.
+        </p>
+      )}
 
       <fieldset className="listing-form__field listing-form__tags">
         <legend>Теги</legend>

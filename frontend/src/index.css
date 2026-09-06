@@ -557,6 +557,120 @@ body {
   cursor: pointer;
 }
 
+.listing-form__expiration {
+  padding: 0;
+  margin: 0;
+  border: none;
+}
+
+.listing-form__expiration legend {
+  padding: 0;
+  margin-bottom: 6px;
+  font-size: 14px;
+  color: #333;
+}
+
+.listing-form__expiration-info {
+  margin: -8px 0 0;
+  padding: 10px 12px;
+  font-size: 13px;
+  color: #6b4f1d;
+  background: #fff7e6;
+  border: 1px solid #f5d47a;
+  border-radius: 8px;
+}
+
+.payment {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.payment__header {
+  display: flex;
+  align-items: center;
+  padding: 16px 32px;
+  background: #fff;
+  border-bottom: 1px solid #e3e6ea;
+}
+
+.payment__logo {
+  font-weight: 700;
+  font-size: 18px;
+  color: #1a5cff;
+  text-decoration: none;
+}
+
+.payment__main {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 24px;
+}
+
+.payment__card {
+  width: 100%;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 32px;
+  background: #fff;
+  border: 1px solid #e3e6ea;
+  border-radius: 12px;
+  text-align: center;
+}
+
+.payment__title {
+  margin: 0;
+  font-size: 24px;
+}
+
+.payment__text {
+  margin: 0;
+  font-size: 14px;
+  color: #555;
+  line-height: 1.5;
+}
+
+.payment__qr {
+  width: 220px;
+  height: 220px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  overflow: hidden;
+  background: #fafafa;
+  border: 2px dashed #c5cbd3;
+  border-radius: 12px;
+}
+
+.payment__qr img,
+.payment__qr svg {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.payment__qr-placeholder {
+  font-size: 13px;
+  color: #888;
+}
+
+.payment__home {
+  display: inline-block;
+  padding: 12px 24px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #fff;
+  background: #1a5cff;
+  border-radius: 8px;
+  text-decoration: none;
+}
+
 .listing-edit__images {
   width: 100%;
   max-width: 480px;
@@ -585,6 +699,16 @@ body {
   padding: 48px 24px;
   text-align: center;
   color: #888;
+}
+
+.listing-detail__expired {
+  margin: 0 0 16px;
+  padding: 12px 16px;
+  font-weight: 600;
+  color: #c62828;
+  background: #fdecea;
+  border: 1px solid #f5c6c6;
+  border-radius: 8px;
 }
 
 .listing-detail__photo {
@@ -708,6 +832,12 @@ body {
   margin: 0 0 24px;
   font-size: 24px;
   font-weight: 700;
+}
+
+.listing-detail__expiration {
+  margin: -16px 0 24px;
+  font-size: 14px;
+  color: #555;
 }
 
 .listing-detail__tags {

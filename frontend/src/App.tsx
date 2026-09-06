@@ -8,6 +8,7 @@ import ChatPage from './pages/ChatPage'
 import ListingDetailPage from './pages/ListingDetailPage'
 import ListingEditPage from './pages/ListingEditPage'
 import ListingNewPage from './pages/ListingNewPage'
+import ListingPaymentPage from './pages/ListingPaymentPage'
 import LoginPage from './pages/LoginPage'
 import NotFoundPage from './pages/NotFoundPage'
 import RegisterPage from './pages/RegisterPage'
@@ -23,6 +24,14 @@ export default function App() {
             element={
               <RequireAuth>
                 <ListingNewPage />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/listings/payment"
+            element={
+              <RequireAuth>
+                <ListingPaymentPage />
               </RequireAuth>
             }
           />
