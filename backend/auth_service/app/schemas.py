@@ -81,6 +81,7 @@ class UserPublic(BaseModel):
 
     id: uuid.UUID
     username: str
+    avatar_path: str | None = None
 
 
 ALLOWED_AVATARS: list[str] = [

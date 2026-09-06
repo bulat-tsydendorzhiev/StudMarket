@@ -1254,14 +1254,29 @@ body {
 
 .chat__message {
   display: flex;
+  align-items: flex-end;
+  gap: 8px;
 }
 
 .chat__message--mine {
   justify-content: flex-end;
 }
 
+.chat__message--mine .chat__avatar {
+  order: 2;
+}
+
 .chat__message--other {
   justify-content: flex-start;
+}
+
+.chat__avatar {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #e3e6ea;
 }
 
 .chat__bubble {
