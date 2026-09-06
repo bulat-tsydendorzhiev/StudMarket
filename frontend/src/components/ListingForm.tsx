@@ -98,6 +98,9 @@ export default function ListingForm({
     if (price && (Number.isNaN(parsedPrice) || parsedPrice < 0)) {
       errors.price = 'Укажите корректную цену'
     }
+    if (!selectedLocation) {
+      errors.location = 'Укажите локацию'
+    }
 
     setFieldErrors(errors)
     if (Object.keys(errors).length > 0) {
@@ -109,7 +112,7 @@ export default function ListingForm({
       description: description.trim(),
       price: price ? parsedPrice : 0,
       tags: selectedTags,
-      location: selectedLocation ? selectedLocation : null,
+      location: selectedLocation,
       expiresInDays,
     })
   }
@@ -154,7 +157,7 @@ export default function ListingForm({
           step="0.01"
           placeholder="Оставьте пустым, если бесплатно"
           value={price}
-          onChange={(e) => setPrice(e.target.value)}
+          onChange={(e) => setPrice(e.target.value.replace(/[^\d.]/g, ''))}
         />
         {fieldErrors.price && <span className="listing-form__error">{fieldErrors.price}</span>}
       </label>
@@ -165,7 +168,7 @@ export default function ListingForm({
           value={selectedLocation}
           onChange={(e) => setSelectedLocation(e.target.value)}
         >
-          <option value="">Не указана</option>
+          <option value="">Выберите локацию</option>
           {(availableLocations ?? []).map((location) => (
             <option value={location.name} key={location.id}>
               {location.name}

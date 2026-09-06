@@ -31,6 +31,7 @@ def _listing_payload(**overrides) -> dict:
         "title": "Велосипед",
         "description": "Почти новый велосипед",
         "price": 1500.0,
+        "location": "Общежитие №2",
     }
     payload.update(overrides)
     return payload
@@ -505,12 +506,14 @@ def test_create_listing_with_location(client: TestClient) -> None:
     assert response.json()["location"] == "Общежитие №3"
 
 
-def test_create_listing_without_location_is_none(client: TestClient) -> None:
+def test_create_listing_without_location_returns_422(client: TestClient) -> None:
     _auth(client)
-    response = client.post("/listings", json=_listing_payload())
+    payload = _listing_payload()
+    payload.pop("location")
 
-    assert response.status_code == 201
-    assert response.json()["location"] is None
+    response = client.post("/listings", json=payload)
+
+    assert response.status_code == 422
 
 
 def test_create_listing_with_unknown_location_returns_422(client: TestClient) -> None:

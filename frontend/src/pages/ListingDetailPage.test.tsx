@@ -337,7 +337,7 @@ describe('ListingDetailPage', () => {
     renderDetailPage()
 
     expect(
-      await screen.findByText('Фото скоро появится'),
+      await screen.findByText('Без фото'),
     ).toBeInTheDocument()
   })
 

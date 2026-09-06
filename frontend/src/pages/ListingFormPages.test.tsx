@@ -45,6 +45,13 @@ function fillForm(overrides: Partial<Record<string, string>> = {}) {
   fireEvent.change(screen.getByLabelText(/Цена, ₽/), { target: { value: values.price } })
 }
 
+async function selectLocation(name: string) {
+  await screen.findByRole('option', { name })
+  fireEvent.change(screen.getByLabelText('Локация'), {
+    target: { value: name },
+  })
+}
+
 afterEach(() => {
   vi.unstubAllGlobals()
 })
@@ -92,11 +99,15 @@ describe('ListingNewPage', () => {
   })
 
   it('redirects to the payment page for the 30-day option without creating a listing', async () => {
-    const fetchMock = stubFetch(guestAuthRoutes())
+    const fetchMock = stubFetch({
+      ...guestAuthRoutes(),
+      ...locationsRoutes(),
+    })
     renderNewPage()
 
     fireEvent.click(screen.getByRole('radio', { name: '30 дней' }))
     fillForm()
+    await selectLocation('Общежитие №2')
     fireEvent.click(screen.getByRole('button', { name: 'Создать объявление' }))
 
     expect(
@@ -111,6 +122,7 @@ describe('ListingNewPage', () => {
   it('submits the chosen expiration duration', async () => {
     const fetchMock = stubFetch({
       ...guestAuthRoutes(),
+      ...locationsRoutes(),
       'POST /listings': {
         status: 201,
         body: makeListing({ id: 'listing-new' }),
@@ -120,6 +132,7 @@ describe('ListingNewPage', () => {
 
     fireEvent.click(screen.getByRole('radio', { name: '1 день' }))
     fillForm()
+    await selectLocation('Общежитие №2')
     fireEvent.click(screen.getByRole('button', { name: 'Создать объявление' }))
 
     expect(await screen.findByText('Listing Page')).toBeInTheDocument()
@@ -133,7 +146,7 @@ describe('ListingNewPage', () => {
       description: 'Почти новый',
       price: 1500,
       tags: [],
-      location: null,
+      location: 'Общежитие №2',
       expires_in_days: 1,
     })
   })
@@ -141,6 +154,7 @@ describe('ListingNewPage', () => {
   it('creates a listing and navigates to it', async () => {
     const fetchMock = stubFetch({
       ...guestAuthRoutes(),
+      ...locationsRoutes(),
       'POST /listings': {
         status: 201,
         body: makeListing({ id: 'listing-new' }),
@@ -149,6 +163,7 @@ describe('ListingNewPage', () => {
     renderNewPage()
 
     fillForm()
+    await selectLocation('Общежитие №2')
     fireEvent.click(screen.getByRole('button', { name: 'Создать объявление' }))
 
     expect(await screen.findByText('Listing Page')).toBeInTheDocument()
@@ -162,7 +177,7 @@ describe('ListingNewPage', () => {
       description: 'Почти новый',
       price: 1500,
       tags: [],
-      location: null,
+      location: 'Общежитие №2',
       expires_in_days: 7,
     })
   })
@@ -170,6 +185,7 @@ describe('ListingNewPage', () => {
   it('creates a free listing when the price is left empty', async () => {
     const fetchMock = stubFetch({
       ...guestAuthRoutes(),
+      ...locationsRoutes(),
       'POST /listings': {
         status: 201,
         body: makeListing({ id: 'listing-free', price: 0 }),
@@ -178,6 +194,7 @@ describe('ListingNewPage', () => {
     renderNewPage()
 
     fillForm({ price: '' })
+    await selectLocation('Общежитие №2')
     fireEvent.click(screen.getByRole('button', { name: 'Создать объявление' }))
 
     expect(await screen.findByText('Listing Page')).toBeInTheDocument()
@@ -191,7 +208,7 @@ describe('ListingNewPage', () => {
       description: 'Почти новый',
       price: 0,
       tags: [],
-      location: null,
+      location: 'Общежитие №2',
       expires_in_days: 7,
     })
   })
@@ -227,12 +244,12 @@ describe('ListingNewPage', () => {
     const fetchMock = stubFetch(guestAuthRoutes())
     renderNewPage()
 
-    fillForm({ title: '', description: '', price: '-5' })
+    fillForm({ title: '', description: '' })
     fireEvent.click(screen.getByRole('button', { name: 'Создать объявление' }))
 
     expect(await screen.findByText('Укажите название')).toBeInTheDocument()
     expect(screen.getByText('Укажите описание')).toBeInTheDocument()
-    expect(screen.getByText('Укажите корректную цену')).toBeInTheDocument()
+    expect(screen.getByText('Укажите локацию')).toBeInTheDocument()
     expect(
       fetchMock.mock.calls.some(([input]) => String(input).endsWith('/listings')),
     ).toBe(false)
@@ -241,11 +258,13 @@ describe('ListingNewPage', () => {
   it('shows a server error when creation fails', async () => {
     stubFetch({
       ...guestAuthRoutes(),
+      ...locationsRoutes(),
       'POST /listings': { status: 422, body: { detail: 'invalid' } },
     })
     renderNewPage()
 
     fillForm()
+    await selectLocation('Общежитие №2')
     fireEvent.click(screen.getByRole('button', { name: 'Создать объявление' }))
 
     expect(
@@ -280,9 +299,7 @@ describe('ListingNewPage', () => {
 
     fireEvent.click(await screen.findByLabelText('Электроника'))
     fireEvent.click(screen.getByLabelText('Спорт'))
-    fireEvent.change(screen.getByLabelText('Локация'), {
-      target: { value: 'Общежитие №3' },
-    })
+    await selectLocation('Общежитие №3')
     fillForm()
     fireEvent.click(screen.getByRole('button', { name: 'Создать объявление' }))
 
@@ -311,6 +328,7 @@ describe('ListingNewPage', () => {
     try {
       const fetchMock = stubFetch({
         ...guestAuthRoutes(),
+        ...locationsRoutes(),
         'POST /listings': {
           status: 201,
           body: makeListing({ id: 'listing-new' }),
@@ -323,6 +341,7 @@ describe('ListingNewPage', () => {
       renderNewPage()
 
       fillForm()
+      await selectLocation('Общежитие №2')
       fireEvent.click(screen.getByRole('button', { name: 'Добавить фото' }))
       const fileInput = document.querySelector('input[type=file]')
       fireEvent.change(fileInput!, {

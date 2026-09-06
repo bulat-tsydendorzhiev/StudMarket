@@ -53,7 +53,7 @@ function ConversationRow({ conversation }: { conversation: ConversationListItem 
             alt={listingTitle}
           />
         ) : (
-          <span className="chat-list__photo-placeholder" aria-hidden="true">📷</span>
+          <span className="chat-list__photo-placeholder">Без фото</span>
         )}
       </div>
 
