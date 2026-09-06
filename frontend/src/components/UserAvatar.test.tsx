@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { screen } from '@testing-library/react'
+import { fireEvent, screen } from '@testing-library/react'
 import UserAvatar, { avatarSrc } from './UserAvatar'
 import { authenticatedAuthRoutes, renderWithProviders, stubFetch } from '../testHelpers'
 
@@ -18,12 +18,19 @@ describe('avatarSrc', () => {
 })
 
 describe('UserAvatar', () => {
-  it('links to the profile page', async () => {
+  it('opens a menu with profile edit and logout options when clicked', async () => {
     stubFetch(authenticatedAuthRoutes())
     renderWithProviders(<UserAvatar />)
 
-    const link = await screen.findByRole('link', { name: 'Профиль' })
-    expect(link).toHaveAttribute('href', '/profile')
+    const button = await screen.findByRole('button', { name: 'Профиль' })
+    expect(button).toHaveAttribute('aria-expanded', 'false')
+
+    fireEvent.click(button)
+
+    expect(
+      await screen.findByRole('menuitem', { name: 'Редактировать профиль' }),
+    ).toHaveAttribute('href', '/profile')
+    expect(screen.getByRole('menuitem', { name: 'Выйти' })).toBeInTheDocument()
   })
 
   it('shows the default avatar when the user has no avatar', async () => {
@@ -52,11 +59,24 @@ describe('UserAvatar', () => {
     expect(img).toHaveAttribute('src', '/avatars/cat.png')
   })
 
+  it('closes the menu when clicking outside', async () => {
+    stubFetch(authenticatedAuthRoutes())
+    renderWithProviders(<UserAvatar />)
+
+    const button = await screen.findByRole('button', { name: 'Профиль' })
+    fireEvent.click(button)
+    expect(await screen.findByRole('menu')).toBeInTheDocument()
+
+    fireEvent.mouseDown(document.body)
+
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument()
+  })
+
   it('renders nothing for guests', async () => {
     stubFetch({ 'GET /auth/me': { status: 401, body: { detail: 'Не авторизован' } } })
     const { container } = renderWithProviders(<UserAvatar />)
 
     await Promise.resolve()
-    expect(container.querySelector('a')).toBeNull()
+    expect(container.querySelector('button')).toBeNull()
   })
 })
