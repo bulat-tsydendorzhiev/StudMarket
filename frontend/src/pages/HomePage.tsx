@@ -87,6 +87,9 @@ export default function HomePage() {
         <nav className="home__nav">
           {isAuthenticated && user ? (
             <>
+              <Link className="home__link" to="/chat">
+                Чаты
+              </Link>
               <Link className="home__link home__link--primary" to="/listings/new">
                 Разместить объявление
               </Link>

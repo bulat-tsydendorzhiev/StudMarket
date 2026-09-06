@@ -3,6 +3,8 @@ import { AuthProvider } from './auth/AuthContext'
 import RequireAuth from './auth/RequireAuth'
 import RequireGuest from './auth/RequireGuest'
 import HomePage from './pages/HomePage'
+import ChatListPage from './pages/ChatListPage'
+import ChatPage from './pages/ChatPage'
 import ListingDetailPage from './pages/ListingDetailPage'
 import ListingEditPage from './pages/ListingEditPage'
 import ListingNewPage from './pages/ListingNewPage'
@@ -25,6 +27,22 @@ export default function App() {
             }
           />
           <Route path="/listings/:id" element={<ListingDetailPage />} />
+          <Route
+            path="/chat"
+            element={
+              <RequireAuth>
+                <ChatListPage />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/chat/:conversationId"
+            element={
+              <RequireAuth>
+                <ChatPage />
+              </RequireAuth>
+            }
+          />
           <Route
             path="/listings/:id/edit"
             element={

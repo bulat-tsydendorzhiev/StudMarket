@@ -29,3 +29,23 @@ async def _proxy(method: str, path: str, request: Request) -> JSONResponse:
 @router.post("/conversations")
 async def create_conversation(request: Request) -> JSONResponse:
     return await _proxy("POST", "/conversations", request)
+
+
+@router.get("/conversations")
+async def list_conversations(request: Request) -> JSONResponse:
+    return await _proxy("GET", "/conversations", request)
+
+
+@router.get("/conversations/{conversation_id}")
+async def get_conversation(conversation_id: str, request: Request) -> JSONResponse:
+    return await _proxy("GET", f"/conversations/{conversation_id}", request)
+
+
+@router.get("/conversations/{conversation_id}/messages")
+async def list_messages(conversation_id: str, request: Request) -> JSONResponse:
+    return await _proxy("GET", f"/conversations/{conversation_id}/messages", request)
+
+
+@router.post("/conversations/{conversation_id}/messages")
+async def send_message(conversation_id: str, request: Request) -> JSONResponse:
+    return await _proxy("POST", f"/conversations/{conversation_id}/messages", request)

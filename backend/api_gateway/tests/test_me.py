@@ -122,3 +122,43 @@ def test_logout_returns_502_when_auth_unavailable() -> None:
     response, _ = _run_logout_with_handler(boom)
 
     assert response.status_code == 502
+
+
+def _run_get_user_with_handler(handler, user_id="uuid-1"):
+    upstream = _Upstream(handler)
+    client = _build_client(upstream)
+    with patch("app.routers.auth.httpx.AsyncClient", return_value=client):
+        test_client = TestClient(app)
+        response = test_client.get(f"/auth/users/{user_id}")
+        return response, upstream
+
+
+def test_get_user_proxies_to_auth_service() -> None:
+    upstream_body = {"id": "uuid-1", "username": "alice"}
+    response, upstream = _run_get_user_with_handler(
+        lambda _: httpx.Response(200, json=upstream_body)
+    )
+
+    assert response.status_code == 200
+    assert response.json() == upstream_body
+    assert upstream.url.endswith("/users/uuid-1")
+    assert "auth-service" in upstream.url
+
+
+def test_get_user_passes_through_404() -> None:
+    error_body = {"detail": "Пользователь не найден"}
+    response, _ = _run_get_user_with_handler(
+        lambda _: httpx.Response(404, json=error_body)
+    )
+
+    assert response.status_code == 404
+    assert response.json() == error_body
+
+
+def test_get_user_returns_502_when_auth_unavailable() -> None:
+    def boom(_):
+        raise httpx.ConnectError("boom")
+
+    response, _ = _run_get_user_with_handler(boom)
+
+    assert response.status_code == 502

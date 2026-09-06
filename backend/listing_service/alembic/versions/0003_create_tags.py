@@ -11,13 +11,21 @@ from typing import Sequence, Union
 from alembic import op
 import sqlalchemy as sa
 
-from app.tags import DEFAULT_TAGS
-
 # revision identifiers, used by Alembic.
 revision: str = "0003"
 down_revision: Union[str, None] = "0002"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
+
+INITIAL_TAGS: list[str] = [
+    "Электроника",
+    "Бытовая техника",
+    "Мебель",
+    "Одежда",
+    "Учеба",
+    "Спорт",
+    "Другое",
+]
 
 
 def upgrade() -> None:
@@ -47,7 +55,7 @@ def upgrade() -> None:
     )
     op.bulk_insert(
         tags_table,
-        [{"id": uuid.uuid4(), "name": name} for name in DEFAULT_TAGS],
+        [{"id": uuid.uuid4(), "name": name} for name in INITIAL_TAGS],
     )
 
 
