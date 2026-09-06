@@ -6,6 +6,7 @@ export interface CurrentUser {
   id: string
   username: string
   email: string
+  avatar_path?: string | null
 }
 
 interface AuthContextValue {

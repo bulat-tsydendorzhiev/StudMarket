@@ -58,6 +58,7 @@ export const currentUser = {
   id: 'user-1',
   username: 'alice',
   email: 'alice@example.com',
+  avatar_path: null,
 }
 
 export function makeListing(overrides: Partial<Listing> = {}): Listing {

@@ -8,6 +8,7 @@ import ListingForm, {
 } from '../components/ListingForm'
 import MessagesLink from '../components/MessagesLink'
 import PhotoPicker from '../components/PhotoPicker'
+import UserAvatar from '../components/UserAvatar'
 
 export default function ListingNewPage() {
   const navigate = useNavigate()
@@ -38,6 +39,7 @@ export default function ListingNewPage() {
           StudMarket
         </Link>
         <MessagesLink />
+        <UserAvatar />
       </header>
 
       <main className="listing-page__main">

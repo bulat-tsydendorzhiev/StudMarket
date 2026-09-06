@@ -272,6 +272,27 @@ describe('App', () => {
     ).toBeInTheDocument()
   })
 
+  it('redirects guests away from "/profile" to "/login"', async () => {
+    stubFetch(guestRoutes())
+    window.history.pushState({}, '', '/profile')
+    renderApp()
+
+    expect(await screen.findByRole('heading', { name: 'Вход' })).toBeInTheDocument()
+  })
+
+  it('renders the profile page for authenticated users', async () => {
+    stubFetch(authenticatedRoutes())
+    window.history.pushState({}, '', '/profile')
+    renderApp()
+
+    expect(await screen.findByRole('heading', { name: 'Профиль' })).toBeInTheDocument()
+    expect(screen.getByLabelText('Имя пользователя')).toHaveValue('alice')
+    expect(screen.getByLabelText('Email')).toHaveValue('alice@example.com')
+    expect(
+      screen.getByRole('link', { name: 'Профиль' }),
+    ).toHaveAttribute('href', '/profile')
+  })
+
   it('shows the authenticated UI on the home page after login', async () => {
     stubFetch({
       ...guestRoutes(),

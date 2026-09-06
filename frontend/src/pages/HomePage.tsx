@@ -12,6 +12,7 @@ import {
 } from '../api/listings'
 import { useAuth } from '../auth/AuthContext'
 import MessagesLink from '../components/MessagesLink'
+import UserAvatar from '../components/UserAvatar'
 
 export function formatPrice(price: number): string {
   if (price === 0) {
@@ -89,6 +90,7 @@ export default function HomePage() {
           {isAuthenticated && user ? (
             <>
               <MessagesLink />
+              <UserAvatar />
               <Link className="home__link home__link--primary" to="/listings/new">
                 Разместить объявление
               </Link>

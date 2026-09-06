@@ -5,6 +5,7 @@ import { chatsApi, type Message } from '../api/chats'
 import { usersApi } from '../api/users'
 import { useAuth } from '../auth/AuthContext'
 import MessagesLink from '../components/MessagesLink'
+import UserAvatar from '../components/UserAvatar'
 
 const POLL_INTERVAL_MS = 3000
 
@@ -142,6 +143,7 @@ export default function ChatPage() {
           StudMarket
         </Link>
         <MessagesLink />
+        <UserAvatar />
       </header>
 
       <main className="chat__main">

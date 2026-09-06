@@ -4,6 +4,7 @@ import { chatsApi, type ConversationListItem } from '../api/chats'
 import { imageUrl, listingsApi } from '../api/listings'
 import { usersApi } from '../api/users'
 import MessagesLink from '../components/MessagesLink'
+import UserAvatar from '../components/UserAvatar'
 
 function formatListTime(timestamp: string): string {
   const date = new Date(timestamp)
@@ -89,6 +90,7 @@ export default function ChatListPage() {
           StudMarket
         </Link>
         <MessagesLink />
+        <UserAvatar />
       </header>
 
       <main className="chat-list__main">

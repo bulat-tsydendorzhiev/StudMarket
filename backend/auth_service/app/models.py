@@ -21,3 +21,4 @@ class User(Base):
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
     )
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    avatar_path: Mapped[str | None] = mapped_column(String(255), nullable=True, default=None)
