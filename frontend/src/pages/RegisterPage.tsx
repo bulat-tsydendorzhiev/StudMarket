@@ -51,6 +51,25 @@ function EyeOffIcon() {
   )
 }
 
+function GradCapIcon() {
+  return (
+    <svg
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M22 10v6M2 10l10-5 10 5-10 5z" />
+      <path d="M6 12v5c0 1.66 2.69 3 6 3s6-1.34 6-3v-5" />
+    </svg>
+  )
+}
+
 function passwordStrengthErrors(password: string): string[] {
   const errors: string[] = []
   if (password.length < MIN_PASSWORD_LENGTH) {
@@ -146,12 +165,16 @@ export default function RegisterPage() {
     <div className="auth-page">
       <header className="auth-header">
         <Link className="auth-logo" to="/">
-          Stud<span className="brand__market">Market</span>
+          <span className="logo-mark" aria-hidden="true" />
+          Stud<span style={{ color: 'var(--green)' }}>Market</span>
         </Link>
       </header>
 
       <main className="auth-main">
         <form className="auth-form" onSubmit={handleSubmit} noValidate>
+          <div className="auth-icon">
+            <GradCapIcon />
+          </div>
           <h1 className="auth-title">Регистрация</h1>
 
           <label className="auth-field">

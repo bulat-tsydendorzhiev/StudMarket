@@ -47,6 +47,25 @@ function EyeOffIcon() {
   )
 }
 
+function ShieldIcon() {
+  return (
+    <svg
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+      <polyline points="9 12 11 14 15 10" />
+    </svg>
+  )
+}
+
 function extractFieldErrors(detail: unknown): FieldErrors {
   if (Array.isArray(detail)) {
     const errors: FieldErrors = {}
@@ -113,12 +132,16 @@ export default function LoginPage() {
     <div className="auth-page">
       <header className="auth-header">
         <Link className="auth-logo" to="/">
-          Stud<span className="brand__market">Market</span>
+          <span className="logo-mark" aria-hidden="true" />
+          Stud<span style={{ color: 'var(--green)' }}>Market</span>
         </Link>
       </header>
 
       <main className="auth-main">
         <form className="auth-form" onSubmit={handleSubmit} noValidate>
+          <div className="auth-icon">
+            <ShieldIcon />
+          </div>
           <h1 className="auth-title">Вход</h1>
 
           <label className="auth-field">

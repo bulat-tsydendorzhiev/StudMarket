@@ -1,9 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { Link, useSearchParams } from 'react-router-dom'
 import { imageUrl, listingsApi } from '../api/listings'
-import MessagesLink from '../components/MessagesLink'
-import SearchBar from '../components/SearchBar'
-import UserAvatar from '../components/UserAvatar'
+import SiteHeader from '../components/SiteHeader'
 import { formatPrice } from './HomePage'
 
 const STATUS_LABELS: Record<string, string> = {
@@ -36,14 +34,11 @@ export default function MyListingsPage() {
 
   return (
     <div className="my-listings">
-      <header className="listing-page__header">
-        <Link className="listing-page__logo" to="/">
-          StudMarket
-        </Link>
-        <SearchBar searchBase="/my-listings" defaultValue={query} />
-        <MessagesLink />
-        <UserAvatar />
-      </header>
+      <SiteHeader
+        searchBase="/my-listings"
+        searchDefault={query}
+        showCreateCta={false}
+      />
 
       <main className="my-listings__main">
         <h1 className="my-listings__title">Мои объявления</h1>

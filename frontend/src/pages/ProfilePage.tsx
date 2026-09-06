@@ -1,11 +1,9 @@
 import { useState, type FormEvent } from 'react'
-import { Link } from 'react-router-dom'
 import { ApiError } from '../api/client'
 import { profileApi, type ProfileUpdate } from '../api/auth'
 import { useAuth, type CurrentUser } from '../auth/AuthContext'
-import MessagesLink from '../components/MessagesLink'
-import SearchBar from '../components/SearchBar'
-import UserAvatar, {
+import SiteHeader from '../components/SiteHeader'
+import {
   avatarSrc,
   AVATAR_PRESETS,
 } from '../components/UserAvatar'
@@ -123,14 +121,7 @@ function ProfileForm({ user }: { user: CurrentUser }) {
 
   return (
     <div className="profile">
-      <header className="listing-page__header">
-        <Link className="listing-page__logo" to="/">
-          StudMarket
-        </Link>
-        <SearchBar />
-        <MessagesLink />
-        <UserAvatar />
-      </header>
+      <SiteHeader />
 
       <main className="profile__main">
         <h1 className="profile__title">Профиль</h1>
@@ -140,8 +131,8 @@ function ProfileForm({ user }: { user: CurrentUser }) {
             className="profile__avatar"
             src={avatarSrc(user.avatar_path)}
             alt="Аватар"
-            width={96}
-            height={96}
+            width={80}
+            height={80}
           />
           <div className="profile__meta">
             <span className="profile__username">{user.username}</span>

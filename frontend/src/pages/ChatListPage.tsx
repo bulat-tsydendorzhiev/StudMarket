@@ -3,9 +3,7 @@ import { Link } from 'react-router-dom'
 import { chatsApi, type ConversationListItem } from '../api/chats'
 import { imageUrl, listingsApi } from '../api/listings'
 import { usersApi } from '../api/users'
-import MessagesLink from '../components/MessagesLink'
-import SearchBar from '../components/SearchBar'
-import UserAvatar from '../components/UserAvatar'
+import SiteHeader from '../components/SiteHeader'
 
 function formatListTime(timestamp: string): string {
   const date = new Date(timestamp)
@@ -54,7 +52,7 @@ function ConversationRow({ conversation }: { conversation: ConversationListItem 
             alt={listingTitle}
           />
         ) : (
-          <span className="chat-list__photo-placeholder">Без фото</span>
+          <span className="chat-list__photo-placeholder">📦</span>
         )}
       </div>
 
@@ -86,14 +84,7 @@ export default function ChatListPage() {
 
   return (
     <div className="chat-list">
-      <header className="listing-page__header">
-        <Link className="listing-page__logo" to="/">
-          Stud<span className="brand__market">Market</span>
-        </Link>
-        <SearchBar />
-        <MessagesLink />
-        <UserAvatar />
-      </header>
+      <SiteHeader />
 
       <main className="chat-list__main">
         <h1 className="chat-list__title">Чаты</h1>
@@ -105,7 +96,13 @@ export default function ChatListPage() {
         )}
 
         {!isLoading && !isError && conversations && conversations.length === 0 && (
-          <p className="chat-list__empty">Чатов пока нет</p>
+          <div className="empty-state">
+            <div className="empty-state__icon">💬</div>
+            <p className="empty-state__title">Чатов пока нет</p>
+            <p className="empty-state__text">
+              Начните общение, написав продавцу из карточки объявления
+            </p>
+          </div>
         )}
 
         {!isLoading && !isError && conversations && conversations.length > 0 && (
