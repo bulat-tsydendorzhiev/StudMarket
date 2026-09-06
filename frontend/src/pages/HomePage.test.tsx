@@ -93,7 +93,7 @@ describe('HomePage', () => {
     await screen.findByText('Велосипед')
     const primary = screen.getByAltText('Велосипед')
     expect(primary).toHaveAttribute('src', expect.stringContaining('/listings/listing-1/images/image-1'))
-    expect(screen.getByText('Фото скоро появится')).toBeInTheDocument()
+    expect(screen.getByText('Без фото')).toBeInTheDocument()
   })
 
   it('shows a "Чаты" link for authenticated users', async () => {

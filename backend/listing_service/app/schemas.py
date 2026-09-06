@@ -54,7 +54,7 @@ class ListingCreate(BaseModel):
     description: str
     price: float | None = None
     tags: list[str] = []
-    location: str | None = None
+    location: str
     expires_in_days: int = settings.listing_expiration_days
 
     @field_validator("title")
@@ -87,11 +87,10 @@ class ListingCreate(BaseModel):
 
     @field_validator("location")
     @classmethod
-    def location_not_blank(cls, value: str | None) -> str | None:
-        if value is not None:
-            value = value.strip()
-            if not value:
-                raise ValueError("location is required")
+    def location_not_blank(cls, value: str) -> str:
+        value = value.strip()
+        if not value:
+            raise ValueError("location is required")
         return value
 
     @field_validator("expires_in_days")

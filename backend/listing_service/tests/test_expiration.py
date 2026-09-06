@@ -33,6 +33,7 @@ def _listing_payload(**overrides) -> dict:
         "title": "Велосипед",
         "description": "Почти новый велосипед",
         "price": 1500.0,
+        "location": "Общежитие №2",
     }
     payload.update(overrides)
     return payload

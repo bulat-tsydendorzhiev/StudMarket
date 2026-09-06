@@ -68,7 +68,7 @@ export default function MyListingsPage() {
                       alt={listing.title}
                     />
                   ) : (
-                    'Фото скоро появится'
+                    'Без фото'
                   )}
                 </div>
                 <div className="listing-card__body">

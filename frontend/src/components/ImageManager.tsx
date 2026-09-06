@@ -48,7 +48,7 @@ export default function ImageManager({ listingId, images, owner }: ImageManagerP
   if (images.length === 0) {
     return (
       <div className="listing-detail__photo">
-        <span>Фото скоро появится</span>
+        <span>Без фото</span>
         {owner && (
           <button
             className="listing-detail__add-photo"
