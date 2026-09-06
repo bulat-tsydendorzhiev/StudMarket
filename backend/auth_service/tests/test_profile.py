@@ -11,8 +11,8 @@ def _register(client: TestClient, username: str = "alice") -> None:
         json={
             "username": username,
             "email": f"{username}@example.com",
-            "password": "secret123",
-            "password_confirmation": "secret123",
+            "password": "Secret123",
+            "password_confirmation": "Secret123",
         },
     )
     assert response.status_code == 201
@@ -21,7 +21,7 @@ def _register(client: TestClient, username: str = "alice") -> None:
 def _login(client: TestClient, username: str = "alice") -> None:
     response = client.post(
         "/auth/login",
-        json={"username_or_email": username, "password": "secret123"},
+        json={"username_or_email": username, "password": "Secret123"},
     )
     assert response.status_code == 200
 
@@ -110,7 +110,7 @@ def test_change_password_requires_current(client, db_session) -> None:
     assert user is not None
     old_hash = user.password_hash
 
-    response = client.patch("/auth/profile", json={"new_password": "newsecret456"})
+    response = client.patch("/auth/profile", json={"new_password": "Newsecret456"})
 
     assert response.status_code == 422
     db_session.refresh(user)
@@ -126,7 +126,7 @@ def test_change_password_with_wrong_current(client, db_session) -> None:
 
     response = client.patch(
         "/auth/profile",
-        json={"current_password": "wrong", "new_password": "newsecret456"},
+        json={"current_password": "wrong", "new_password": "Newsecret456"},
     )
 
     assert response.status_code == 400
@@ -139,18 +139,18 @@ def test_change_password_success(client, db_session) -> None:
 
     response = client.patch(
         "/auth/profile",
-        json={"current_password": "secret123", "new_password": "newsecret456"},
+        json={"current_password": "Secret123", "new_password": "Newsecret456"},
     )
     assert response.status_code == 200
 
     user = db_session.scalar(select(User).where(User.username == "alice"))
     assert user is not None
-    assert verify_password("newsecret456", user.password_hash)
-    assert not verify_password("secret123", user.password_hash)
+    assert verify_password("Newsecret456", user.password_hash)
+    assert not verify_password("Secret123", user.password_hash)
 
     response = client.post(
         "/auth/login",
-        json={"username_or_email": "alice", "password": "newsecret456"},
+        json={"username_or_email": "alice", "password": "Newsecret456"},
     )
     assert response.status_code == 200
 

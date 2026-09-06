@@ -1,3 +1,4 @@
+import logging
 import uuid
 from datetime import datetime, timedelta, timezone
 
@@ -18,12 +19,26 @@ from ..tags import sort_tags
 
 router = APIRouter(prefix="/listings", tags=["listings"])
 
+logger = logging.getLogger(__name__)
+
 _UNSET = object()
+
+
+def _client_ip(request: Request) -> str:
+    return request.client.host if request.client else "unknown"
+
+
+def _log_security(event: str, request: Request, user_id: uuid.UUID | None = None) -> None:
+    fields: dict[str, str] = {"event": event, "remote_ip": _client_ip(request)}
+    if user_id is not None:
+        fields["user_id"] = str(user_id)
+    logger.warning("security event: %s", fields)
 
 
 def _get_current_user_id(request: Request) -> uuid.UUID:
     token = request.cookies.get(settings.jwt_cookie_name)
     if not token:
+        _log_security("auth.failed", request)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Не авторизован",
@@ -31,6 +46,7 @@ def _get_current_user_id(request: Request) -> uuid.UUID:
     try:
         user_id = uuid.UUID(decode_access_token(token))
     except (ValueError, TypeError, jwt.PyJWTError):
+        _log_security("auth.failed.invalid_token", request)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Не авторизован",
@@ -58,8 +74,9 @@ def _get_listing_or_404(listing_id: uuid.UUID, db: Session) -> Listing:
     return listing
 
 
-def _ensure_owner(listing: Listing, user_id: uuid.UUID) -> None:
+def _ensure_owner(listing: Listing, user_id: uuid.UUID, request: Request) -> None:
     if listing.seller_id != user_id:
+        _log_security("auth.forbidden.not_owner", request, user_id=user_id)
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Недостаточно прав",
@@ -198,7 +215,7 @@ def update_listing(
 ) -> Listing:
     user_id = _get_current_user_id(request)
     listing = _get_listing_or_404(listing_id, db)
-    _ensure_owner(listing, user_id)
+    _ensure_owner(listing, user_id, request)
 
     update_data = payload.model_dump(exclude_unset=True)
     if update_data.get("price") is None and "price" in update_data:
@@ -224,7 +241,7 @@ def delete_listing(
 ) -> None:
     user_id = _get_current_user_id(request)
     listing = _get_listing_or_404(listing_id, db)
-    _ensure_owner(listing, user_id)
+    _ensure_owner(listing, user_id, request)
     for image in listing.images:
         image_storage.delete(image.file_path)
     db.delete(listing)

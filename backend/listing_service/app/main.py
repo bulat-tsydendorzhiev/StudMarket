@@ -1,4 +1,6 @@
 import asyncio
+import logging
+import sys
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -6,6 +8,21 @@ from fastapi import FastAPI
 from .config import settings
 from .expiration import expiration_loop
 from .routers import images, listings
+
+
+def _configure_logging() -> None:
+    handler = logging.StreamHandler(sys.stdout)
+    handler.setFormatter(
+        logging.Formatter(
+            "%(asctime)s %(levelname)s %(name)s %(message)s"
+        )
+    )
+    root = logging.getLogger()
+    root.setLevel(logging.INFO)
+    root.addHandler(handler)
+
+
+_configure_logging()
 
 
 @asynccontextmanager

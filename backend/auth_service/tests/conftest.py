@@ -6,6 +6,13 @@ from sqlalchemy.pool import StaticPool
 
 from app.database import Base, get_db
 from app.main import app
+from app.ratelimit import login_limiter
+
+
+@pytest.fixture(autouse=True)
+def _reset_rate_limiter():
+    login_limiter.reset()
+    yield
 
 
 @pytest.fixture()
