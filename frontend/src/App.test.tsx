@@ -285,6 +285,42 @@ describe('App', () => {
     expect(await screen.findByRole('heading', { name: 'Вход' })).toBeInTheDocument()
   })
 
+  it('renders the my-listings page for authenticated users', async () => {
+    stubFetch({
+      ...authenticatedRoutes(),
+      'GET /listings/my': { status: 200, body: [] },
+    })
+    window.history.pushState({}, '', '/my-listings')
+    renderApp()
+
+    expect(
+      await screen.findByText('У вас пока нет объявлений'),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Мои объявления' })).toBeInTheDocument()
+  })
+
+  it('redirects guests away from "/my-listings" to "/login"', async () => {
+    stubFetch(guestRoutes())
+    window.history.pushState({}, '', '/my-listings')
+    renderApp()
+
+    expect(await screen.findByRole('heading', { name: 'Вход' })).toBeInTheDocument()
+  })
+
+  it('shows the "Мои объявления" link in the avatar menu', async () => {
+    stubFetch(authenticatedRoutes())
+    window.history.pushState({}, '', '/')
+    renderApp()
+
+    await screen.findByRole('button', { name: 'Профиль' })
+    await act(async () => {
+      screen.getByRole('button', { name: 'Профиль' }).click()
+    })
+    await screen.findByText('Редактировать профиль')
+    const menuItem = screen.getByRole('menuitem', { name: 'Мои объявления' })
+    expect(menuItem).toHaveAttribute('href', '/my-listings')
+  })
+
   it('renders the profile page for authenticated users', async () => {
     stubFetch(authenticatedRoutes())
     window.history.pushState({}, '', '/profile')

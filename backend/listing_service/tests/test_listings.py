@@ -687,3 +687,60 @@ def test_listing_response_exposes_location(client: TestClient) -> None:
 
     assert response.status_code == 200
     assert response.json()["location"] == "Общежитие №16"
+
+
+def test_list_my_listings_requires_auth(client: TestClient) -> None:
+    response = client.get("/listings/my")
+    assert response.status_code == 401
+
+
+def test_list_my_listings_returns_only_own_listings(client: TestClient) -> None:
+    _auth(client)
+    client.post("/listings", json=_listing_payload(title="Мое"))
+    client.post("/listings", json=_listing_payload(title="Тоже мое"))
+    _auth(client, OTHER_USER_ID)
+    client.post("/listings", json=_listing_payload(title="Чужое"))
+
+    _auth(client)
+    response = client.get("/listings/my")
+
+    assert response.status_code == 200
+    titles = [listing["title"] for listing in response.json()]
+    assert set(titles) == {"Мое", "Тоже мое"}
+
+
+def test_list_my_listings_is_empty_for_new_user(client: TestClient) -> None:
+    _auth(client)
+    response = client.get("/listings/my")
+
+    assert response.status_code == 200
+    assert response.json() == []
+
+
+def test_list_my_listings_does_not_accept_seller_filter(client: TestClient) -> None:
+    _auth(client)
+    client.post("/listings", json=_listing_payload(title="Мое"))
+
+    response = client.get("/listings/my", params={"seller_id": str(OTHER_USER_ID)})
+
+    assert response.status_code == 200
+    titles = [listing["title"] for listing in response.json()]
+    assert titles == ["Мое"]
+
+
+def test_list_my_listings_includes_expired_and_sold(client: TestClient, db_session) -> None:
+    from app.models import Listing, ListingStatus
+
+    _auth(client)
+    active = client.post("/listings", json=_listing_payload(title="Активное")).json()
+    sold = client.post("/listings", json=_listing_payload(title="Проданное")).json()
+    expired = client.post("/listings", json=_listing_payload(title="Истекшее")).json()
+    db_session.get(Listing, uuid.UUID(sold["id"])).status = ListingStatus.SOLD
+    db_session.get(Listing, uuid.UUID(expired["id"])).status = ListingStatus.EXPIRED
+    db_session.commit()
+
+    response = client.get("/listings/my")
+
+    assert response.status_code == 200
+    titles = {listing["title"] for listing in response.json()}
+    assert titles == {"Активное", "Проданное", "Истекшее"}

@@ -129,6 +129,21 @@ def create_listing(
     return listing
 
 
+@router.get("/my", response_model=list[ListingResponse])
+def list_my_listings(
+    request: Request,
+    db: Session = Depends(get_db),
+) -> list[Listing]:
+    user_id = _get_current_user_id(request)
+    statement = (
+        select(Listing)
+        .where(Listing.seller_id == user_id)
+        .order_by(Listing.created_at.desc(), Listing.id.desc())
+    )
+    listings = db.scalars(statement).all()
+    return list(listings)
+
+
 @router.get("", response_model=list[ListingResponse])
 def list_listings(
     tags: list[str] = Query(default=[]),

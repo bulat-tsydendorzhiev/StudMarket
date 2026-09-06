@@ -94,6 +94,14 @@ export default function UserAvatar({ size = 36 }: UserAvatarProps) {
           >
             Редактировать профиль
           </Link>
+          <Link
+            className="user-avatar__item"
+            to="/my-listings"
+            role="menuitem"
+            onClick={() => setOpen(false)}
+          >
+            Мои объявления
+          </Link>
           <button
             className="user-avatar__item user-avatar__item--danger"
             type="button"

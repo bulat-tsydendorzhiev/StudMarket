@@ -2,7 +2,7 @@
 
 ## Requirements
 
-Add a page with all listings created by the authenticated user.
+Add a page with all listings created by the authenticated user and set up navigation to the page via the dropdown list after clicking on the avatar.
 
 Route:
 

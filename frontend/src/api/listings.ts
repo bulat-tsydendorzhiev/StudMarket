@@ -71,6 +71,7 @@ export const listingsApi = {
     const query = params.toString()
     return apiClient.get<Listing[]>(query ? `/listings?${query}` : '/listings')
   },
+  listMine: () => apiClient.get<Listing[]>('/listings/my'),
   get: (id: string) => apiClient.get<Listing>(`/listings/${id}`),
   create: (input: ListingInput) => apiClient.post<Listing>('/listings', input),
   update: (id: string, input: ListingInput) =>

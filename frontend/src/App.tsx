@@ -10,6 +10,7 @@ import ListingEditPage from './pages/ListingEditPage'
 import ListingNewPage from './pages/ListingNewPage'
 import ListingPaymentPage from './pages/ListingPaymentPage'
 import LoginPage from './pages/LoginPage'
+import MyListingsPage from './pages/MyListingsPage'
 import NotFoundPage from './pages/NotFoundPage'
 import ProfilePage from './pages/ProfilePage'
 import RegisterPage from './pages/RegisterPage'
@@ -66,6 +67,14 @@ export default function App() {
             element={
               <RequireAuth>
                 <ProfilePage />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/my-listings"
+            element={
+              <RequireAuth>
+                <MyListingsPage />
               </RequireAuth>
             }
           />
