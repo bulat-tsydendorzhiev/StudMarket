@@ -17,6 +17,7 @@ export default function ListingNewPage() {
         price: values.price,
         tags: values.tags,
         location: values.location,
+        expires_in_days: values.expiresInDays,
       })
       if (photos.length > 0) {
         await listingsApi.uploadImages(listing.id, photos)

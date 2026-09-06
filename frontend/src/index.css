@@ -532,6 +532,19 @@ body {
   cursor: pointer;
 }
 
+.listing-form__expiration {
+  padding: 0;
+  margin: 0;
+  border: none;
+}
+
+.listing-form__expiration legend {
+  padding: 0;
+  margin-bottom: 6px;
+  font-size: 14px;
+  color: #333;
+}
+
 .listing-edit__images {
   width: 100%;
   max-width: 480px;
@@ -693,6 +706,12 @@ body {
   margin: 0 0 24px;
   font-size: 24px;
   font-weight: 700;
+}
+
+.listing-detail__expiration {
+  margin: -16px 0 24px;
+  font-size: 14px;
+  color: #555;
 }
 
 .listing-detail__tags {

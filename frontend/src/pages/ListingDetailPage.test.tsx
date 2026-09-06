@@ -78,6 +78,50 @@ describe('ListingDetailPage', () => {
     expect(screen.getByText('Бесплатно')).toBeInTheDocument()
   })
 
+  it('shows the remaining days until expiration for guests', async () => {
+    const expiresAt = new Date(Date.now() + 6 * 24 * 60 * 60 * 1000).toISOString()
+    stubFetch({
+      ...guestAuthRoutes(),
+      'GET /listings/listing-1': {
+        status: 200,
+        body: makeListing({ expires_at: expiresAt }),
+      },
+    })
+    renderDetailPage()
+
+    expect(await screen.findByText('Велосипед')).toBeInTheDocument()
+    expect(screen.getByText('Осталось 6 дней')).toBeInTheDocument()
+  })
+
+  it('pluralizes the remaining days correctly', async () => {
+    const expiresAt = new Date(Date.now() + 1 * 24 * 60 * 60 * 1000).toISOString()
+    stubFetch({
+      ...guestAuthRoutes(),
+      'GET /listings/listing-1': {
+        status: 200,
+        body: makeListing({ expires_at: expiresAt }),
+      },
+    })
+    renderDetailPage()
+
+    expect(await screen.findByText('Велосипед')).toBeInTheDocument()
+    expect(screen.getByText('Осталось 1 день')).toBeInTheDocument()
+  })
+
+  it('hides the expiration block for expired listings', async () => {
+    stubFetch({
+      ...guestAuthRoutes(),
+      'GET /listings/listing-1': {
+        status: 200,
+        body: makeListing({ status: 'EXPIRED' }),
+      },
+    })
+    renderDetailPage()
+
+    expect(await screen.findByText('Объявление истекло')).toBeInTheDocument()
+    expect(screen.queryByText(/Осталось/)).not.toBeInTheDocument()
+  })
+
   it('shows the tags of the listing', async () => {
     stubFetch({
       ...guestAuthRoutes(),

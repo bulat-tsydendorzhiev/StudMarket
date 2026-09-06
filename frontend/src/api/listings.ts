@@ -39,6 +39,7 @@ export interface ListingInput {
   price: number
   tags: string[]
   location: string | null
+  expires_in_days?: number
 }
 
 export interface ListingFilters {

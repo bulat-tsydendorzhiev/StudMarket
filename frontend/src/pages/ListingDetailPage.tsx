@@ -7,6 +7,26 @@ import { useAuth } from '../auth/AuthContext'
 import ImageManager from '../components/ImageManager'
 import { formatPrice } from './HomePage'
 
+function daysUntil(expiresAt: string | null): number | null {
+  if (!expiresAt) {
+    return null
+  }
+  const remaining = new Date(expiresAt).getTime() - Date.now()
+  return remaining > 0 ? Math.ceil(remaining / (1000 * 60 * 60 * 24)) : 0
+}
+
+function formatDays(days: number): string {
+  const mod10 = days % 10
+  const mod100 = days % 100
+  if (mod10 === 1 && mod100 !== 11) {
+    return `${days} день`
+  }
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) {
+    return `${days} дня`
+  }
+  return `${days} дней`
+}
+
 export default function ListingDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
@@ -43,6 +63,7 @@ export default function ListingDetailPage() {
 
   const isOwner = user?.id === listing.seller_id
   const isExpired = listing.status === 'EXPIRED'
+  const daysLeft = daysUntil(listing.expires_at)
 
   return (
     <div className="listing-detail">
@@ -66,6 +87,13 @@ export default function ListingDetailPage() {
           </div>
         )}
         <p className="listing-detail__price">{formatPrice(listing.price)}</p>
+        {!isExpired && daysLeft !== null && (
+          <p className="listing-detail__expiration" role="status">
+            {daysLeft > 0
+              ? `Осталось ${formatDays(daysLeft)}`
+              : 'Истекает сегодня'}
+          </p>
+        )}
 
         {listing.tags.length > 0 && (
           <div className="listing-detail__tags">

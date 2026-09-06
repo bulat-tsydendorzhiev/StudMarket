@@ -2,6 +2,7 @@ import uuid
 from datetime import datetime, timedelta, timezone
 
 import jwt
+import pytest
 from fastapi.testclient import TestClient
 
 from app.config import settings
@@ -55,6 +56,58 @@ def test_create_listing_sets_future_expiration(client: TestClient) -> None:
     if expires_at.tzinfo is None:
         expires_at = expires_at.replace(tzinfo=timezone.utc)
     assert expires_at > datetime.now(timezone.utc) - timedelta(minutes=1)
+
+
+@pytest.mark.parametrize(
+    ("expires_in_days", "lower_bound", "upper_bound"),
+    [
+        (1, timedelta(hours=23), timedelta(days=1, minutes=1)),
+        (7, timedelta(days=6, hours=23), timedelta(days=7, minutes=1)),
+        (30, timedelta(days=29, hours=23), timedelta(days=30, minutes=1)),
+    ],
+)
+def test_create_listing_uses_chosen_expiration(
+    client: TestClient,
+    expires_in_days: int,
+    lower_bound: timedelta,
+    upper_bound: timedelta,
+) -> None:
+    _auth(client)
+
+    response = client.post(
+        "/listings", json=_listing_payload(expires_in_days=expires_in_days)
+    )
+
+    assert response.status_code == 201
+    expires_at = datetime.fromisoformat(response.json()["expires_at"])
+    if expires_at.tzinfo is None:
+        expires_at = expires_at.replace(tzinfo=timezone.utc)
+    delta = expires_at - datetime.now(timezone.utc)
+    assert lower_bound <= delta <= upper_bound
+
+
+def test_create_listing_default_expiration_is_seven_days(client: TestClient) -> None:
+    _auth(client)
+
+    response = client.post("/listings", json=_listing_payload())
+
+    assert response.status_code == 201
+    expires_at = datetime.fromisoformat(response.json()["expires_at"])
+    if expires_at.tzinfo is None:
+        expires_at = expires_at.replace(tzinfo=timezone.utc)
+    delta = expires_at - datetime.now(timezone.utc)
+    assert timedelta(days=6, hours=23) <= delta <= timedelta(days=7, minutes=1)
+
+
+@pytest.mark.parametrize("bad_days", [0, 2, 5, 14, -1])
+def test_create_listing_rejects_invalid_expiration_days(
+    client: TestClient, bad_days: int
+) -> None:
+    _auth(client)
+
+    response = client.post("/listings", json=_listing_payload(expires_in_days=bad_days))
+
+    assert response.status_code == 422
 
 
 def test_list_shows_only_active_not_expired_listings(client: TestClient) -> None:

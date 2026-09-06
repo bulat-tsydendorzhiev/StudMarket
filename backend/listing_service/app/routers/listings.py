@@ -116,7 +116,7 @@ def create_listing(
         title=payload.title,
         description=payload.description,
         price=0.0 if payload.price is None else payload.price,
-        expires_at=datetime.now(timezone.utc) + timedelta(days=settings.listing_expiration_days),
+        expires_at=datetime.now(timezone.utc) + timedelta(days=payload.expires_in_days),
     )
     db.add(listing)
     db.flush()
