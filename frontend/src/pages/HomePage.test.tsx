@@ -270,4 +270,37 @@ describe('HomePage', () => {
     expect(lastUrl).not.toContain('tags=')
     expect(lastUrl).not.toContain('exclude_tags=')
   })
+
+  it('pre-fills the search bar from the URL query', async () => {
+    stubFetch({
+      ...authenticatedAuthRoutes(),
+      'GET /listings?q=велосипед': {
+        status: 200,
+        body: [makeListing({ id: 'listing-1', title: 'Велосипед' })],
+      },
+    })
+    renderWithProviders(<HomePage />, ['/?q=велосипед'])
+
+    await screen.findByText('Велосипед')
+    const searchInput = screen.getByLabelText('Поиск объявлений')
+    expect(searchInput).toHaveValue('велосипед')
+  })
+
+  it('sends the URL query to the listings API', async () => {
+    const fetchMock = stubFetch({
+      ...authenticatedAuthRoutes(),
+      'GET /listings?q=велосипед': {
+        status: 200,
+        body: [makeListing({ id: 'listing-1', title: 'Велосипед' })],
+      },
+    })
+    renderWithProviders(<HomePage />, ['/?q=велосипед'])
+
+    expect(await screen.findByText('Велосипед')).toBeInTheDocument()
+    const calls = fetchMock.mock.calls.filter(([input, init]) =>
+      String(input).includes('/listings') && (init?.method ?? 'GET') === 'GET',
+    )
+    const searchCall = calls.find(([input]) => String(input).includes('q='))
+    expect(searchCall).toBeTruthy()
+  })
 })

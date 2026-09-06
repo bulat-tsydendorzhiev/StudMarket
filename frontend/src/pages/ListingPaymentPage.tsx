@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import MessagesLink from '../components/MessagesLink'
+import SearchBar from '../components/SearchBar'
 import UserAvatar from '../components/UserAvatar'
 
 export default function ListingPaymentPage() {
@@ -9,6 +10,7 @@ export default function ListingPaymentPage() {
         <Link className="payment__logo" to="/">
           StudMarket
         </Link>
+        <SearchBar />
         <MessagesLink />
         <UserAvatar />
       </header>

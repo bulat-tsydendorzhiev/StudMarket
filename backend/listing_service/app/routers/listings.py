@@ -150,6 +150,7 @@ def list_listings(
     exclude_tags: list[str] = Query(default=[]),
     location: list[str] = Query(default=[]),
     ids: list[uuid.UUID] = Query(default=[]),
+    q: str | None = Query(default=None),
     db: Session = Depends(get_db),
 ) -> list[Listing]:
     statement = (
@@ -159,6 +160,8 @@ def list_listings(
             Listing.expires_at > datetime.now(timezone.utc),
         )
     )
+    if q and q.strip():
+        statement = statement.where(Listing.title.ilike(f"%{q.strip()}%"))
     for tag_name in tags:
         statement = statement.where(Listing.tags.any(Tag.name == tag_name.strip()))
     for tag_name in exclude_tags:
