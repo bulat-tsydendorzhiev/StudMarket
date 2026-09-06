@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import {
   imageUrl,
   locationsApi,
@@ -12,6 +12,7 @@ import {
 } from '../api/listings'
 import { useAuth } from '../auth/AuthContext'
 import MessagesLink from '../components/MessagesLink'
+import SearchBar from '../components/SearchBar'
 import UserAvatar from '../components/UserAvatar'
 
 export function formatPrice(price: number): string {
@@ -23,6 +24,8 @@ export function formatPrice(price: number): string {
 
 export default function HomePage() {
   const { user, isAuthenticated } = useAuth()
+  const [searchParams] = useSearchParams()
+  const query = searchParams.get('q') ?? ''
   const [selectedTags, setSelectedTags] = useState<string[]>([])
   const [excludedTags, setExcludedTags] = useState<string[]>([])
   const [selectedLocations, setSelectedLocations] = useState<string[]>([])
@@ -38,12 +41,13 @@ export default function HomePage() {
   })
 
   const { data: listings, isLoading, isError } = useQuery({
-    queryKey: ['listings', selectedTags, excludedTags, selectedLocations],
+    queryKey: ['listings', selectedTags, excludedTags, selectedLocations, query],
     queryFn: () =>
       listingsApi.list({
         tags: selectedTags,
         excludeTags: excludedTags,
         locations: selectedLocations,
+        q: query,
       }),
   })
 
@@ -76,6 +80,7 @@ export default function HomePage() {
     <div className="home">
       <header className="home__header">
         <span className="home__logo">StudMarket</span>
+        <SearchBar defaultValue={query} />
         <nav className="home__nav">
           {isAuthenticated && user ? (
             <>

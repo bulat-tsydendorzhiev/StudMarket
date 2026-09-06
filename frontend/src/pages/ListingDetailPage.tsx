@@ -6,6 +6,7 @@ import { listingsApi } from '../api/listings'
 import { useAuth } from '../auth/AuthContext'
 import ImageManager from '../components/ImageManager'
 import MessagesLink from '../components/MessagesLink'
+import SearchBar from '../components/SearchBar'
 import UserAvatar from '../components/UserAvatar'
 import { formatPrice } from './HomePage'
 
@@ -73,6 +74,7 @@ export default function ListingDetailPage() {
         <Link className="listing-page__logo" to="/">
           StudMarket
         </Link>
+        <SearchBar />
         <MessagesLink />
         <UserAvatar />
       </header>

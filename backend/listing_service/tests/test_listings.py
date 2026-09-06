@@ -747,3 +747,71 @@ def test_list_my_listings_includes_expired_and_sold(client: TestClient, db_sessi
     assert response.status_code == 200
     titles = {listing["title"] for listing in response.json()}
     assert titles == {"Активное", "Проданное", "Истекшее"}
+
+
+def test_search_listings_by_title(client: TestClient) -> None:
+    _auth(client)
+    client.post("/listings", json=_listing_payload(title="Велосипед горный"))
+    client.post("/listings", json=_listing_payload(title="Учебник по математике"))
+    client.post("/listings", json=_listing_payload(title="Велосипедное колесо"))
+
+    response = client.get("/listings", params={"q": "Велосипед"})
+
+    assert response.status_code == 200
+    titles = [listing["title"] for listing in response.json()]
+    assert set(titles) == {"Велосипед горный", "Велосипедное колесо"}
+
+
+def test_search_listings_is_case_insensitive(client: TestClient) -> None:
+    _auth(client)
+    client.post("/listings", json=_listing_payload(title="iPhone 15"))
+    client.post("/listings", json=_listing_payload(title="Наушники"))
+
+    response = client.get("/listings", params={"q": "iphone"})
+
+    assert response.status_code == 200
+    titles = [listing["title"] for listing in response.json()]
+    assert titles == ["iPhone 15"]
+
+
+def test_search_listings_with_empty_query_returns_all(client: TestClient) -> None:
+    _auth(client)
+    client.post("/listings", json=_listing_payload(title="Велосипед"))
+    client.post("/listings", json=_listing_payload(title="Учебник"))
+
+    response = client.get("/listings", params={"q": "   "})
+
+    assert response.status_code == 200
+    titles = [listing["title"] for listing in response.json()]
+    assert set(titles) == {"Велосипед", "Учебник"}
+
+
+def test_search_listings_with_no_matches_returns_empty(client: TestClient) -> None:
+    _auth(client)
+    client.post("/listings", json=_listing_payload(title="Велосипед"))
+
+    response = client.get("/listings", params={"q": "Несуществующее"})
+
+    assert response.status_code == 200
+    assert response.json() == []
+
+
+def test_search_listings_combines_with_tags(client: TestClient) -> None:
+    _auth(client)
+    client.post(
+        "/listings",
+        json=_listing_payload(title="Велосипед горный", tags=["Спорт"]),
+    )
+    client.post(
+        "/listings",
+        json=_listing_payload(title="Велосипед детский", tags=["Другое"]),
+    )
+
+    response = client.get(
+        "/listings",
+        params={"q": "Велосипед", "tags": ["Спорт"]},
+    )
+
+    assert response.status_code == 200
+    titles = [listing["title"] for listing in response.json()]
+    assert titles == ["Велосипед горный"]
