@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { useRef, useState, type ChangeEvent } from 'react'
+import { useEffect, useRef, useState, type ChangeEvent } from 'react'
 import { imageUrl, listingsApi, type ListingImage } from '../api/listings'
 
 interface ImageManagerProps {
@@ -12,6 +12,16 @@ export default function ImageManager({ listingId, images, owner }: ImageManagerP
   const queryClient = useQueryClient()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [activeIndex, setActiveIndex] = useState(0)
+  const [lightboxOpen, setLightboxOpen] = useState(false)
+
+  useEffect(() => {
+    if (!lightboxOpen) return
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setLightboxOpen(false)
+    }
+    document.addEventListener('keydown', handleKey)
+    return () => document.removeEventListener('keydown', handleKey)
+  }, [lightboxOpen])
 
   const invalidateListing = () => {
     queryClient.invalidateQueries({ queryKey: ['listings', listingId] })
@@ -76,6 +86,19 @@ export default function ImageManager({ listingId, images, owner }: ImageManagerP
           src={imageUrl(active.url)}
           alt="Фото объявления"
         />
+        <button
+          className="gallery__zoom"
+          type="button"
+          onClick={() => setLightboxOpen(true)}
+          title="Увеличить фото"
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="11" cy="11" r="8" />
+            <line x1="21" y1="21" x2="16.65" y2="16.65" />
+            <line x1="11" y1="8" x2="11" y2="14" />
+            <line x1="8" y1="11" x2="14" y2="11" />
+          </svg>
+        </button>
         {owner && (
           <button
             className="gallery__delete"
@@ -94,6 +117,25 @@ export default function ImageManager({ listingId, images, owner }: ImageManagerP
           </button>
         )}
       </div>
+
+      {lightboxOpen && (
+        <div className="lightbox" onClick={() => setLightboxOpen(false)}>
+          <button
+            className="lightbox__close"
+            type="button"
+            onClick={() => setLightboxOpen(false)}
+            title="Закрыть"
+          >
+            &times;
+          </button>
+          <img
+            className="lightbox__image"
+            src={imageUrl(active.url)}
+            alt="Фото объявления (увеличенное)"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+      )}
 
       <div className="gallery__thumbs">
         {images.map((image, index) => (
