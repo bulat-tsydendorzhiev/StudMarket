@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { apiClient, ApiError } from '../api/client'
 import { useAuth, type CurrentUser } from '../auth/AuthContext'
+import SiteFooter from '../components/SiteFooter'
 
 interface FieldErrors {
   username_or_email?: string
@@ -192,6 +193,7 @@ export default function LoginPage() {
           </p>
         </form>
       </main>
+      <SiteFooter />
     </div>
   )
 }

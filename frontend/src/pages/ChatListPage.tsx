@@ -4,6 +4,7 @@ import { chatsApi, type ConversationListItem } from '../api/chats'
 import { imageUrl, listingsApi } from '../api/listings'
 import { usersApi } from '../api/users'
 import SiteHeader from '../components/SiteHeader'
+import SiteFooter from '../components/SiteFooter'
 
 function formatListTime(timestamp: string): string {
   const date = new Date(timestamp)
@@ -116,6 +117,7 @@ export default function ChatListPage() {
           </div>
         )}
       </main>
+      <SiteFooter />
     </div>
   )
 }

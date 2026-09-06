@@ -8,6 +8,7 @@ import ListingForm, {
 } from '../components/ListingForm'
 import PhotoPicker from '../components/PhotoPicker'
 import SiteHeader from '../components/SiteHeader'
+import SiteFooter from '../components/SiteFooter'
 
 export default function ListingNewPage() {
   const navigate = useNavigate()
@@ -56,6 +57,7 @@ export default function ListingNewPage() {
           <PhotoPicker files={photos} onChange={setPhotos} />
         </section>
       </main>
+      <SiteFooter />
     </div>
   )
 }

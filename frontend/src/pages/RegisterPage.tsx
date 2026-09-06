@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { apiClient, ApiError } from '../api/client'
 import { useAuth, type CurrentUser } from '../auth/AuthContext'
+import SiteFooter from '../components/SiteFooter'
 
 interface FieldErrors {
   username?: string
@@ -276,6 +277,7 @@ export default function RegisterPage() {
           </p>
         </form>
       </main>
+      <SiteFooter />
     </div>
   )
 }

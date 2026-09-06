@@ -6,6 +6,7 @@ import { listingsApi } from '../api/listings'
 import { useAuth } from '../auth/AuthContext'
 import ImageManager from '../components/ImageManager'
 import SiteHeader from '../components/SiteHeader'
+import SiteFooter from '../components/SiteFooter'
 import { formatPrice } from './HomePage'
 
 function daysUntil(expiresAt: string | null): number | null {
@@ -166,6 +167,7 @@ export default function ListingDetailPage() {
           </div>
         </div>
       </main>
+      <SiteFooter />
     </div>
   )
 }

@@ -4,6 +4,7 @@ import { listingsApi } from '../api/listings'
 import ImageManager from '../components/ImageManager'
 import ListingForm, { type ListingFormValues } from '../components/ListingForm'
 import SiteHeader from '../components/SiteHeader'
+import SiteFooter from '../components/SiteFooter'
 
 export default function ListingEditPage() {
   const { id } = useParams<{ id: string }>()
@@ -65,6 +66,7 @@ export default function ListingEditPage() {
           </section>
         )}
       </main>
+      <SiteFooter />
     </div>
   )
 }

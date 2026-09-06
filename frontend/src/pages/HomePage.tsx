@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
-import { useState } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { Link, useLocation, useSearchParams } from 'react-router-dom'
 import {
   imageUrl,
   locationsApi,
@@ -11,6 +11,8 @@ import {
   type Tag,
 } from '../api/listings'
 import SiteHeader from '../components/SiteHeader'
+import SiteFooter from '../components/SiteFooter'
+import { useAuth } from '../auth/AuthContext'
 
 export function formatPrice(price: number): string {
   if (price === 0) {
@@ -27,7 +29,20 @@ function tagColor(index: number): string {
 
 export default function HomePage() {
   const [searchParams] = useSearchParams()
+  const { isAuthenticated } = useAuth()
   const query = searchParams.get('q') ?? ''
+  const location = useLocation()
+
+  useEffect(() => {
+    if (location.hash === '#how-it-works') {
+      const target = document.getElementById('how-it-works')
+      if (target) {
+        const top = target.getBoundingClientRect().top + window.scrollY
+        const y = top - (window.innerHeight - target.offsetHeight) / 2
+        window.scrollTo({ top: Math.max(y, 0), behavior: 'smooth' })
+      }
+    }
+  }, [location.hash])
   const [selectedTags, setSelectedTags] = useState<string[]>([])
   const [excludedTags, setExcludedTags] = useState<string[]>([])
   const [selectedLocations, setSelectedLocations] = useState<string[]>([])
@@ -99,6 +114,7 @@ export default function HomePage() {
                 {categories.map((tag: Tag) => {
                   const included = selectedTags.includes(tag.name)
                   const excluded = excludedTags.includes(tag.name)
+                  const sign = included ? '+' : excluded ? '−' : ''
                   return (
                     <label className="filters__item" key={tag.id}>
                       <input
@@ -111,7 +127,14 @@ export default function HomePage() {
                         checked={included}
                         onChange={() => cycleTag(tag.name)}
                       />
-                      <span className="filters__tag-label">{tag.name}</span>
+                      <span className="filters__tag-label">
+                        {sign && (
+                          <span className="filters__tag-sign" aria-hidden="true">
+                            {sign}
+                          </span>
+                        )}
+                        {tag.name}
+                      </span>
                     </label>
                   )
                 })}
@@ -136,13 +159,15 @@ export default function HomePage() {
           </aside>
 
           <section className="listings">
-            <div className="listings__status" role="status">
-              {isLoading && 'Загрузка объявлений…'}
-              {isError && 'Не удалось загрузить объявления'}
-              {!isLoading && !isError && listings && listings.length === 0 && (
-                'Объявлений пока нет'
-              )}
-            </div>
+            {(isLoading || isError || (listings && listings.length === 0)) && (
+              <div className="listings__status" role="status">
+                {isLoading && 'Загрузка объявлений…'}
+                {isError && 'Не удалось загрузить объявления'}
+                {!isLoading && !isError && listings && listings.length === 0 && (
+                  'Объявлений пока нет'
+                )}
+              </div>
+            )}
 
             {!isLoading && !isError && listings && listings.length > 0 && (
               <div className="listings__grid">
@@ -194,6 +219,41 @@ export default function HomePage() {
           </section>
         </div>
       </main>
+
+      <section id="how-it-works" className="how-it-works">
+        <div className="how-it-works__inner">
+          <p className="how-it-works__label">Просто и по-соседски</p>
+          <h2 className="how-it-works__title">Как работает StudMarket</h2>
+          <div className="how-it-works__grid">
+            {[
+              { step: '1', title: 'Найди нужное', text: 'Выбери предпочтительные локации и отфильтруй объявления по тегам.' },
+              { step: '2', title: 'Напиши соседу', text: 'Договорись о встрече прямо в кампусе — всё рядом.' },
+              { step: '3', title: 'Забери безопасно', text: 'Профили студентов и локальные встречи делают обмен спокойнее.' },
+            ].map((item) => (
+              <div className="how-it-works__item" key={item.step}>
+                <span className="how-it-works__icon">{item.step}</span>
+                <h3 className="how-it-works__item-title">{item.title}</h3>
+                <p className="how-it-works__item-text">{item.text}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="free-space">
+        <div className="free-space__inner">
+          <p className="free-space__label">Освободи место в комнате</p>
+          <h2 className="free-space__title">Есть вещь, которой ты не пользуешься?</h2>
+          <p className="free-space__text">
+            Создай объявление за пару минут — новый хозяин уже рядом.
+          </p>
+          <Link className="free-space__cta" to={isAuthenticated ? '/listings/new' : '/register'}>
+            + Подать объявление →
+          </Link>
+        </div>
+      </section>
+
+      <SiteFooter />
     </div>
   )
 }

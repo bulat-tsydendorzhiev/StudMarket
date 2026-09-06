@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { Link, useSearchParams } from 'react-router-dom'
 import { imageUrl, listingsApi } from '../api/listings'
 import SiteHeader from '../components/SiteHeader'
+import SiteFooter from '../components/SiteFooter'
 import { formatPrice } from './HomePage'
 
 const STATUS_LABELS: Record<string, string> = {
@@ -53,6 +54,7 @@ export default function MyListingsPage() {
           <div className="my-listings__empty">
             <p className="my-listings__empty-text">У вас пока нет объявлений</p>
             <Link className="listing-detail__edit" to="/listings/new">
+              <span className="site-header__cta-plus" aria-hidden="true">+</span>
               Разместить объявление
             </Link>
           </div>
@@ -97,6 +99,7 @@ export default function MyListingsPage() {
           </div>
         )}
       </main>
+      <SiteFooter />
     </div>
   )
 }

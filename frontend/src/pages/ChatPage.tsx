@@ -5,6 +5,7 @@ import { chatsApi, type Message } from '../api/chats'
 import { usersApi } from '../api/users'
 import { useAuth } from '../auth/AuthContext'
 import SiteHeader from '../components/SiteHeader'
+import SiteFooter from '../components/SiteFooter'
 import { avatarSrc } from '../components/UserAvatar'
 
 const POLL_INTERVAL_MS = 3000
@@ -208,6 +209,7 @@ export default function ChatPage() {
           </>
         )}
       </main>
+      <SiteFooter />
     </div>
   )
 }

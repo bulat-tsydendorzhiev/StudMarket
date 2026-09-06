@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import SiteHeader from '../components/SiteHeader'
+import SiteFooter from '../components/SiteFooter'
 
 export default function ListingPaymentPage() {
   return (
@@ -24,6 +25,7 @@ export default function ListingPaymentPage() {
           </Link>
         </div>
       </main>
+      <SiteFooter />
     </div>
   )
 }
