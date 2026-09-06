@@ -54,8 +54,8 @@ def test_create_listing_sets_seller_from_token(client: TestClient) -> None:
     assert body["title"] == "Велосипед"
     assert body["description"] == "Почти новый велосипед"
     assert body["price"] == 1500.0
-    assert body["status"] == "active"
-    assert body["expires_at"] is None
+    assert body["status"] == "ACTIVE"
+    assert body["expires_at"] is not None
 
 
 def test_create_listing_requires_non_blank_fields(client: TestClient) -> None:

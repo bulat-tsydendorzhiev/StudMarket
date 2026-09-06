@@ -11,6 +11,8 @@ class Settings(BaseSettings):
     jwt_cookie_name: str = "access_token"
     upload_dir: str = "/uploads"
     max_image_size_bytes: int = 5 * 1024 * 1024
+    listing_expiration_days: int = 30
+    expiration_check_interval_seconds: int = 60
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 

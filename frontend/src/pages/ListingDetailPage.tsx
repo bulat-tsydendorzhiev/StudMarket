@@ -42,6 +42,7 @@ export default function ListingDetailPage() {
   }
 
   const isOwner = user?.id === listing.seller_id
+  const isExpired = listing.status === 'EXPIRED'
 
   return (
     <div className="listing-detail">
@@ -59,6 +60,11 @@ export default function ListingDetailPage() {
         />
 
         <h1 className="listing-detail__title">{listing.title}</h1>
+        {isExpired && (
+          <div className="listing-detail__expired" role="status">
+            Объявление истекло
+          </div>
+        )}
         <p className="listing-detail__price">{formatPrice(listing.price)}</p>
 
         {listing.tags.length > 0 && (
@@ -85,7 +91,7 @@ export default function ListingDetailPage() {
           </div>
         </section>
 
-        {isAuthenticated && !isOwner && (
+        {isAuthenticated && !isOwner && !isExpired && (
           <div className="listing-detail__actions">
             <button
               className="listing-detail__chat"

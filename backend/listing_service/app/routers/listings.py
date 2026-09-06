@@ -1,4 +1,5 @@
 import uuid
+from datetime import datetime, timedelta, timezone
 
 import jwt
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
@@ -7,8 +8,9 @@ from sqlalchemy.orm import Session
 
 from ..config import settings
 from ..database import get_db
+from ..expiration import is_listing_expired
 from ..locations import sort_locations
-from ..models import Listing, Location, Tag
+from ..models import Listing, ListingStatus, Location, Tag
 from ..schemas import ListingCreate, ListingResponse, ListingUpdate, LocationResponse, TagResponse
 from ..security import decode_access_token
 from ..storage import storage as image_storage
@@ -34,6 +36,16 @@ def _get_current_user_id(request: Request) -> uuid.UUID:
             detail="Не авторизован",
         )
     return user_id
+
+
+def _get_current_user_id_optional(request: Request) -> uuid.UUID | None:
+    token = request.cookies.get(settings.jwt_cookie_name)
+    if not token:
+        return None
+    try:
+        return uuid.UUID(decode_access_token(token))
+    except (ValueError, TypeError, jwt.PyJWTError):
+        return None
 
 
 def _get_listing_or_404(listing_id: uuid.UUID, db: Session) -> Listing:
@@ -104,6 +116,7 @@ def create_listing(
         title=payload.title,
         description=payload.description,
         price=0.0 if payload.price is None else payload.price,
+        expires_at=datetime.now(timezone.utc) + timedelta(days=settings.listing_expiration_days),
     )
     db.add(listing)
     db.flush()
@@ -123,7 +136,13 @@ def list_listings(
     location: list[str] = Query(default=[]),
     db: Session = Depends(get_db),
 ) -> list[Listing]:
-    statement = select(Listing)
+    statement = (
+        select(Listing)
+        .where(
+            Listing.status == ListingStatus.ACTIVE,
+            Listing.expires_at > datetime.now(timezone.utc),
+        )
+    )
     for tag_name in tags:
         statement = statement.where(Listing.tags.any(Tag.name == tag_name.strip()))
     for tag_name in exclude_tags:
@@ -140,9 +159,16 @@ def list_listings(
 @router.get("/{listing_id}", response_model=ListingResponse)
 def get_listing(
     listing_id: uuid.UUID,
+    request: Request,
     db: Session = Depends(get_db),
 ) -> Listing:
-    return _get_listing_or_404(listing_id, db)
+    listing = _get_listing_or_404(listing_id, db)
+    if is_listing_expired(listing) and _get_current_user_id_optional(request) != listing.seller_id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Объявление не найдено",
+        )
+    return listing
 
 
 @router.patch("/{listing_id}", response_model=ListingResponse)

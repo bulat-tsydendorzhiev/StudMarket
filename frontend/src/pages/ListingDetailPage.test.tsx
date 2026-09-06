@@ -180,6 +180,25 @@ describe('ListingDetailPage', () => {
     ).toBeInTheDocument()
   })
 
+  it('shows an expired state and hides chat button for expired listings', async () => {
+    stubFetch({
+      ...authenticatedAuthRoutes(),
+      'GET /listings/listing-1': {
+        status: 200,
+        body: makeListing({
+          status: 'EXPIRED',
+          seller_id: 'some-other-user',
+        }),
+      },
+    })
+    renderDetailPage()
+
+    expect(await screen.findByText('Объявление истекло')).toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Написать продавцу' }),
+    ).not.toBeInTheDocument()
+  })
+
   it('shows "Написать продавцу" for an authenticated buyer', async () => {
     stubFetch({
       ...authenticatedAuthRoutes(),
