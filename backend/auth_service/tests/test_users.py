@@ -31,6 +31,8 @@ def test_get_user_returns_public_profile(client, db_session) -> None:
     data = response.json()
     assert data["id"] == str(user.id)
     assert data["username"] == "alice"
+    assert "avatar_path" in data
+    assert data["avatar_path"] is None
     assert "email" not in data
     assert "password" not in data
 
