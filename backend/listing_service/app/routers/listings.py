@@ -168,6 +168,7 @@ def list_listings(
     location: list[str] = Query(default=[]),
     ids: list[uuid.UUID] = Query(default=[]),
     q: str | None = Query(default=None),
+    sort: str | None = Query(default=None),
     db: Session = Depends(get_db),
 ) -> list[Listing]:
     statement = (
@@ -189,7 +190,16 @@ def list_listings(
         )
     if ids:
         statement = statement.where(Listing.id.in_(ids))
-    statement = statement.order_by(Listing.created_at.desc(), Listing.id.desc())
+    
+    if sort == "newest":
+        statement = statement.order_by(Listing.created_at.desc(), Listing.id.desc())
+    elif sort == "cheapest":
+        statement = statement.order_by(Listing.price.asc(), Listing.created_at.desc())
+    elif sort == "most_expensive":
+        statement = statement.order_by(Listing.price.desc(), Listing.created_at.desc())
+    else:
+        statement = statement.order_by(Listing.created_at.desc(), Listing.id.desc())
+    
     listings = db.scalars(statement).all()
     return list(listings)
 

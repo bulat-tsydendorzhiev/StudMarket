@@ -47,6 +47,7 @@ export interface ListingFilters {
   excludeTags?: string[]
   locations?: string[]
   q?: string
+  sort?: string
 }
 
 export const tagsApi = {
@@ -71,6 +72,9 @@ export const listingsApi = {
     }
     if (filters.q) {
       params.append('q', filters.q)
+    }
+    if (filters.sort) {
+      params.append('sort', filters.sort)
     }
     const query = params.toString()
     return apiClient.get<Listing[]>(query ? `/listings?${query}` : '/listings')

@@ -46,6 +46,7 @@ export default function HomePage() {
   const [selectedTags, setSelectedTags] = useState<string[]>([])
   const [excludedTags, setExcludedTags] = useState<string[]>([])
   const [selectedLocations, setSelectedLocations] = useState<string[]>([])
+  const [sortOrder, setSortOrder] = useState<string>('newest')
 
   const { data: tags } = useQuery({
     queryKey: ['tags'],
@@ -57,16 +58,52 @@ export default function HomePage() {
     queryFn: locationsApi.list,
   })
 
-  const { data: listings, isLoading, isError } = useQuery({
-    queryKey: ['listings', selectedTags, excludedTags, selectedLocations, query],
+  const { data: listings, isLoading, isError, refetch } = useQuery({
+    queryKey: ['listings', selectedTags, excludedTags, selectedLocations, query, sortOrder],
     queryFn: () =>
       listingsApi.list({
         tags: selectedTags,
         excludeTags: excludedTags,
         locations: selectedLocations,
         q: query,
+        sort: sortOrder,
       }),
+    enabled: isAuthenticated,
   })
+
+  const categories = (tags ?? []).sort((a: Tag, b: Tag) =>
+    a.name.localeCompare(b.name),
+  )
+
+  const cycleTag = (name: string) => {
+    const included = selectedTags.includes(name)
+    const excluded = excludedTags.includes(name)
+    if (included) {
+      setSelectedTags((prev) => prev.filter((tag) => tag !== name))
+      setExcludedTags((prev) => [...prev, name])
+    } else if (excluded) {
+      setExcludedTags((prev) => prev.filter((tag) => tag !== name))
+    } else {
+      setSelectedTags((prev) => [...prev, name])
+    }
+  }
+
+  const categories = (tags ?? []).sort((a: Tag, b: Tag) =>
+    a.name.localeCompare(b.name),
+  )
+
+  const cycleTag = (name: string) => {
+    const included = selectedTags.includes(name)
+    const excluded = excludedTags.includes(name)
+    if (included) {
+      setSelectedTags((prev) => prev.filter((tag) => tag !== name))
+      setExcludedTags((prev) => [...prev, name])
+    } else if (excluded) {
+      setExcludedTags((prev) => prev.filter((tag) => tag !== name))
+    } else {
+      setSelectedTags((prev) => [...prev, name])
+    }
+  }
 
   const categories = (tags ?? []).sort((a: Tag, b: Tag) =>
     a.name.localeCompare(b.name),
@@ -91,6 +128,18 @@ export default function HomePage() {
         ? prev.filter((location) => location !== name)
         : [...prev, name],
     )
+  }
+
+  const handleApplyFilters = () => {
+    void refetch()
+  }
+
+  const handleResetFilters = () => {
+    setSelectedTags([])
+    setExcludedTags([])
+    setSelectedLocations([])
+    setSortOrder('newest')
+    void refetch()
   }
 
   return (
@@ -156,9 +205,54 @@ export default function HomePage() {
                 ))}
               </div>
             )}
+
+            <div className="filters__group">
+              <div className="filters__item" style={{ flexDirection: 'column', alignItems: 'flex-start' }}>
+                <label className="filters__tag-label" style={{ marginBottom: '8px' }}>
+                  Сортировка:
+                </label>
+                <select
+                  value={sortOrder}
+                  onChange={(e) => setSortOrder(e.target.value)}
+                  className="navbar-search__input"
+                  style={{ width: '100%', padding: '8px 12px', fontSize: '13px' }}
+                >
+                  <option value="newest">Сначала новые</option>
+                  <option value="cheapest">Сначала дешевле</option>
+                  <option value="most_expensive">Сначала дороже</option>
+                </select>
+              </div>
+
+              <button
+                onClick={handleApplyFilters}
+                className="site-header__cta"
+                style={{ marginTop: '16px', width: '100%' }}
+              >
+                Показать
+              </button>
+
+              {(selectedTags.length > 0 || excludedTags.length > 0 || selectedLocations.length > 0 || sortOrder !== 'newest') && (
+                <button
+                  onClick={handleResetFilters}
+                  className="navbar-search__input"
+                  style={{ marginTop: '8px', cursor: 'pointer', background: '#f8f9f5', borderColor: '#e0e5dd' }}
+                >
+                  Сбросить фильтры
+                </button>
+              )}
+            </div>
           </aside>
 
           <section className="listings">
+            <div className="listings__controls" style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '700', color: '#29372e' }}>
+                Все объявления
+              </h3>
+              <div style={{ fontSize: '13px', color: '#68736a' }}>
+                {listings ? `${listings.length} объявлений` : 'Загрузка...'}
+              </div>
+            </div>
+
             {(isLoading || isError || (listings && listings.length === 0)) && (
               <div className="listings__status" role="status">
                 {isLoading && 'Загрузка объявлений…'}
