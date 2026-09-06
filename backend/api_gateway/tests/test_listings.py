@@ -95,6 +95,21 @@ def test_list_listings_proxies_and_returns_list() -> None:
     assert "listing-service" in upstream.url
 
 
+def test_list_my_listings_proxies_to_listing_service() -> None:
+    response, upstream = _run_with_handler(
+        lambda _: httpx.Response(200, json=[_listing_body()]),
+        "GET",
+        "/listings/my",
+        cookies={"access_token": "some-jwt"},
+    )
+
+    assert response.status_code == 200
+    assert response.json() == [_listing_body()]
+    assert upstream.url.endswith("/listings/my")
+    assert "listing-service" in upstream.url
+    assert upstream.cookies.get("access_token") == "some-jwt"
+
+
 def test_get_listing_proxies_with_id() -> None:
     response, upstream = _run_with_handler(
         lambda _: httpx.Response(200, json=_listing_body()),

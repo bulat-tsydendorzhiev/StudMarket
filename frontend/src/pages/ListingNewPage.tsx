@@ -2,8 +2,13 @@ import { useMutation } from '@tanstack/react-query'
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { listingsApi } from '../api/listings'
-import ListingForm, { type ListingFormValues } from '../components/ListingForm'
+import ListingForm, {
+  PAID_EXPIRATION_DAYS,
+  type ListingFormValues,
+} from '../components/ListingForm'
+import MessagesLink from '../components/MessagesLink'
 import PhotoPicker from '../components/PhotoPicker'
+import UserAvatar from '../components/UserAvatar'
 
 export default function ListingNewPage() {
   const navigate = useNavigate()
@@ -17,6 +22,7 @@ export default function ListingNewPage() {
         price: values.price,
         tags: values.tags,
         location: values.location,
+        expires_in_days: values.expiresInDays,
       })
       if (photos.length > 0) {
         await listingsApi.uploadImages(listing.id, photos)
@@ -32,6 +38,8 @@ export default function ListingNewPage() {
         <Link className="listing-page__logo" to="/">
           Stud<span className="brand__market">Market</span>
         </Link>
+        <MessagesLink />
+        <UserAvatar />
       </header>
 
       <main className="listing-page__main">
@@ -41,7 +49,13 @@ export default function ListingNewPage() {
           submittingLabel="Создание…"
           pending={mutation.isPending}
           error={mutation.isError ? 'Не удалось создать объявление' : ''}
-          onSubmit={(values) => mutation.mutate(values)}
+          onSubmit={(values) => {
+            if (values.expiresInDays === PAID_EXPIRATION_DAYS) {
+              navigate('/listings/payment')
+              return
+            }
+            mutation.mutate(values)
+          }}
         />
 
         <section className="listing-form__images">

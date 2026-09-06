@@ -1,6 +1,22 @@
+import re
 import uuid
 
 from pydantic import BaseModel, ConfigDict, EmailStr, field_validator, model_validator
+
+_PASSWORD_MIN_LENGTH = 8
+
+
+def validate_password_strength(password: str) -> list[str]:
+    errors: list[str] = []
+    if len(password) < _PASSWORD_MIN_LENGTH:
+        errors.append(f"password must be at least {_PASSWORD_MIN_LENGTH} characters")
+    if not re.search(r"[A-Z]", password):
+        errors.append("password must contain at least one uppercase letter")
+    if not re.search(r"[a-z]", password):
+        errors.append("password must contain at least one lowercase letter")
+    if not re.search(r"\d", password):
+        errors.append("password must contain at least one digit")
+    return errors
 
 
 class RegisterRequest(BaseModel):
@@ -22,6 +38,9 @@ class RegisterRequest(BaseModel):
     def password_not_blank(cls, value: str) -> str:
         if not value:
             raise ValueError("password is required")
+        errors = validate_password_strength(value)
+        if errors:
+            raise ValueError("; ".join(errors))
         return value
 
     @field_validator("email")
@@ -44,6 +63,7 @@ class RegisterResponse(BaseModel):
     id: uuid.UUID
     username: str
     email: str
+    avatar_path: str | None = None
 
 
 class LoginRequest(BaseModel):
@@ -72,6 +92,7 @@ class LoginResponse(BaseModel):
     id: uuid.UUID
     username: str
     email: str
+    avatar_path: str | None = None
 
 
 class UserPublic(BaseModel):
@@ -79,3 +100,56 @@ class UserPublic(BaseModel):
 
     id: uuid.UUID
     username: str
+    avatar_path: str | None = None
+
+
+ALLOWED_AVATARS: list[str] = [
+    "/avatars/fox.png",
+    "/avatars/cat.png",
+    "/avatars/dog.png",
+    "/avatars/owl.png",
+    "/avatars/penguin.png",
+    "/avatars/polar_bear.png",
+]
+
+
+class ProfileUpdateRequest(BaseModel):
+    username: str | None = None
+    email: EmailStr | None = None
+    current_password: str | None = None
+    new_password: str | None = None
+    avatar_path: str | None = None
+
+    @field_validator("username")
+    @classmethod
+    def username_not_blank(cls, value: str | None) -> str | None:
+        if value is None:
+            return value
+        value = value.strip()
+        if not value:
+            raise ValueError("username is required")
+        return value
+
+    @field_validator("email")
+    @classmethod
+    def email_not_blank(cls, value: str | None) -> str | None:
+        if value is None:
+            return value
+        if not value.strip():
+            raise ValueError("email is required")
+        return value
+
+    @field_validator("avatar_path")
+    @classmethod
+    def avatar_must_be_allowed(cls, value: str | None) -> str | None:
+        if value is None:
+            return value
+        if value not in ALLOWED_AVATARS:
+            raise ValueError("avatar not in allowed list")
+        return value
+
+    @model_validator(mode="after")
+    def password_change_requires_current(self) -> "ProfileUpdateRequest":
+        if self.new_password and not self.current_password:
+            raise ValueError("current_password is required when changing password")
+        return self

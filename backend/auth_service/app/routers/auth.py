@@ -1,3 +1,4 @@
+import logging
 import uuid
 
 import jwt
@@ -9,7 +10,8 @@ from sqlalchemy.orm import Session
 from ..config import settings
 from ..database import get_db
 from ..models import User
-from ..schemas import LoginRequest, LoginResponse, RegisterRequest, RegisterResponse
+from ..ratelimit import login_limiter
+from ..schemas import LoginRequest, LoginResponse, ProfileUpdateRequest, RegisterRequest, RegisterResponse
 from ..security import (
     burn_password_check,
     create_access_token,
@@ -20,10 +22,30 @@ from ..security import (
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
+logger = logging.getLogger(__name__)
+
+_AUTH_FAILURE_DETAIL = "Неверное имя пользователя или пароль"
+
+
+def _client_ip(request: Request) -> str:
+    return request.client.host if request.client else "unknown"
+
+
+def _log_security(event: str, *, ip: str | None = None, username: str | None = None) -> None:
+    """Log a security-relevant event without any sensitive data."""
+    fields: dict[str, str] = {"event": event}
+    if ip:
+        fields["remote_ip"] = ip
+    if username:
+        fields["username"] = username
+    logger.warning("security event: %s", fields)
+
 
 def _get_current_user(request: Request, db: Session) -> User:
     token = request.cookies.get(settings.jwt_cookie_name)
+    ip = _client_ip(request)
     if not token:
+        _log_security("auth.failed", ip=ip)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Не авторизован",
@@ -31,12 +53,14 @@ def _get_current_user(request: Request, db: Session) -> User:
     try:
         user_id = uuid.UUID(decode_access_token(token))
     except (ValueError, TypeError, jwt.PyJWTError):
+        _log_security("auth.failed.invalid_token", ip=ip)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Не авторизован",
         )
     user = db.get(User, user_id)
     if user is None or not user.is_active:
+        _log_security("auth.failed.inactive_or_missing", ip=ip)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Не авторизован",
@@ -99,8 +123,21 @@ def register(
 
 
 @router.post("/login", response_model=LoginResponse)
-def login(payload: LoginRequest, response: Response, db: Session = Depends(get_db)) -> User:
+def login(
+    payload: LoginRequest,
+    request: Request,
+    response: Response,
+    db: Session = Depends(get_db),
+) -> User:
+    ip = _client_ip(request)
     identifier = payload.username_or_email.strip()
+    if not login_limiter.check(ip):
+        _log_security("auth.login.rate_limited", ip=ip, username=identifier)
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Слишком много попыток входа. Попробуйте позже",
+        )
+
     user = db.scalar(
         select(User).where(
             or_(User.username == identifier, User.email == identifier)
@@ -109,15 +146,17 @@ def login(payload: LoginRequest, response: Response, db: Session = Depends(get_d
 
     if user is None or not user.is_active:
         burn_password_check(payload.password)
+        _log_security("auth.login.failed", ip=ip, username=identifier)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Неверное имя пользователя или пароль",
+            detail=_AUTH_FAILURE_DETAIL,
         )
 
     if not verify_password(payload.password, user.password_hash):
+        _log_security("auth.login.failed", ip=ip, username=identifier)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Неверное имя пользователя или пароль",
+            detail=_AUTH_FAILURE_DETAIL,
         )
 
     _set_auth_cookie(response, user)
@@ -127,6 +166,60 @@ def login(payload: LoginRequest, response: Response, db: Session = Depends(get_d
 @router.get("/me", response_model=LoginResponse)
 def me(request: Request, db: Session = Depends(get_db)) -> User:
     return _get_current_user(request, db)
+
+
+@router.patch("/profile", response_model=LoginResponse)
+def update_profile(
+    payload: ProfileUpdateRequest,
+    request: Request,
+    db: Session = Depends(get_db),
+) -> User:
+    user = _get_current_user(request, db)
+    changes = payload.model_dump(exclude_unset=True)
+
+    if "username" in changes and changes["username"] != user.username:
+        taken = db.scalar(
+            select(User).where(
+                User.username == changes["username"],
+                User.id != user.id,
+            )
+        )
+        if taken is not None:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Имя пользователя уже занято",
+            )
+        user.username = changes["username"]
+
+    if "email" in changes and changes["email"] != user.email:
+        taken = db.scalar(
+            select(User).where(
+                User.email == changes["email"],
+                User.id != user.id,
+            )
+        )
+        if taken is not None:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Email уже зарегистрирован",
+            )
+        user.email = changes["email"]
+
+    if "new_password" in changes and changes["new_password"]:
+        current = payload.current_password or ""
+        if not verify_password(current, user.password_hash):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Неверный текущий пароль",
+            )
+        user.password_hash = hash_password(changes["new_password"])
+
+    if "avatar_path" in changes:
+        user.avatar_path = changes["avatar_path"]
+
+    db.commit()
+    db.refresh(user)
+    return user
 
 
 @router.post("/logout", response_class=Response, status_code=status.HTTP_204_NO_CONTENT)

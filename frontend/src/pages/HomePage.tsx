@@ -11,6 +11,8 @@ import {
   type Tag,
 } from '../api/listings'
 import { useAuth } from '../auth/AuthContext'
+import MessagesLink from '../components/MessagesLink'
+import UserAvatar from '../components/UserAvatar'
 
 export function formatPrice(price: number): string {
   if (price === 0) {
@@ -20,8 +22,7 @@ export function formatPrice(price: number): string {
 }
 
 export default function HomePage() {
-  const { user, isAuthenticated, logout } = useAuth()
-  const [loggingOut, setLoggingOut] = useState(false)
+  const { user, isAuthenticated } = useAuth()
   const [selectedTags, setSelectedTags] = useState<string[]>([])
   const [excludedTags, setExcludedTags] = useState<string[]>([])
   const [selectedLocations, setSelectedLocations] = useState<string[]>([])
@@ -71,15 +72,6 @@ export default function HomePage() {
     )
   }
 
-  const handleLogout = async () => {
-    setLoggingOut(true)
-    try {
-      await logout()
-    } finally {
-      setLoggingOut(false)
-    }
-  }
-
   return (
     <div className="home">
       <header className="home__header">
@@ -89,21 +81,11 @@ export default function HomePage() {
         <nav className="home__nav">
           {isAuthenticated && user ? (
             <>
-              <Link className="home__link" to="/chat">
-                Чаты
-              </Link>
               <Link className="home__link home__link--primary" to="/listings/new">
                 Разместить объявление
               </Link>
-              <span className="home__username">{user.username}</span>
-              <button
-                className="home__button"
-                type="button"
-                onClick={handleLogout}
-                disabled={loggingOut}
-              >
-                {loggingOut ? 'Выход…' : 'Выйти'}
-              </button>
+              <MessagesLink />
+              <UserAvatar />
             </>
           ) : (
             <>
@@ -192,7 +174,7 @@ export default function HomePage() {
                           alt={listing.title}
                         />
                       ) : (
-                        'Фото скоро появится'
+                        'Без фото'
                       )}
                     </div>
                     <div className="listing-card__body">

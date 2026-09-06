@@ -154,4 +154,23 @@ describe('LoginPage', () => {
 
     expect(await screen.findByText('password is required')).toBeInTheDocument()
   })
+
+  it('toggles password visibility with the eye button', () => {
+    stubFetch(guestRoutes())
+    renderLoginPage()
+
+    const passwordInput = screen.getByLabelText('Пароль') as HTMLInputElement
+    const eyeButton = screen.getByRole('button', { name: 'Показать пароль' })
+
+    expect(passwordInput.type).toBe('password')
+
+    fireEvent.click(eyeButton)
+
+    expect(passwordInput.type).toBe('text')
+    expect(screen.getByRole('button', { name: 'Скрыть пароль' })).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Скрыть пароль' }))
+
+    expect(passwordInput.type).toBe('password')
+  })
 })

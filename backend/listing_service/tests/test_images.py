@@ -32,6 +32,7 @@ def _listing_payload(**overrides) -> dict:
         "title": "Велосипед",
         "description": "Почти новый велосипед",
         "price": 1500.0,
+        "location": "Общежитие №2",
     }
     payload.update(overrides)
     return payload
@@ -135,6 +136,40 @@ def test_upload_image_with_unsupported_type_returns_415(
 
     assert response.status_code == 415
     assert list(image_storage.root.glob("*")) == []
+
+
+def test_upload_rejects_mismatched_content_type(
+    client: TestClient, image_storage
+) -> None:
+    """A text payload claiming to be an image must be rejected.
+
+    Validation relies on actual file content, not the client-supplied
+    ``Content-Type`` header, which can be spoofed.
+    """
+    listing = _create_listing(client)
+
+    response = client.post(
+        f"/listings/{listing['id']}/images",
+        files=[("files", ("evil.png", b"not an image", "image/png"))],
+    )
+
+    assert response.status_code == 415
+    assert list(image_storage.root.glob("*")) == []
+
+
+def test_upload_accepts_valid_magic_bytes_regardless_of_header(
+    client: TestClient, image_storage
+) -> None:
+    """JPEG magic bytes are honoured even if the header lies."""
+    listing = _create_listing(client)
+
+    response = client.post(
+        f"/listings/{listing['id']}/images",
+        files=[("files", ("photo.png", _jpeg_bytes(), "image/png"))],
+    )
+
+    assert response.status_code == 201
+    assert list(image_storage.root.glob("*.jpg")) != []
 
 
 def test_upload_image_too_large_returns_413(

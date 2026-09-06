@@ -3,6 +3,10 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field, computed_field, field_validator
 
+from .config import settings
+
+ALLOWED_EXPIRATION_DAYS = (1, 7, 30)
+
 
 class TagResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -50,7 +54,8 @@ class ListingCreate(BaseModel):
     description: str
     price: float | None = None
     tags: list[str] = []
-    location: str | None = None
+    location: str
+    expires_in_days: int = settings.listing_expiration_days
 
     @field_validator("title")
     @classmethod
@@ -82,11 +87,17 @@ class ListingCreate(BaseModel):
 
     @field_validator("location")
     @classmethod
-    def location_not_blank(cls, value: str | None) -> str | None:
-        if value is not None:
-            value = value.strip()
-            if not value:
-                raise ValueError("location is required")
+    def location_not_blank(cls, value: str) -> str:
+        value = value.strip()
+        if not value:
+            raise ValueError("location is required")
+        return value
+
+    @field_validator("expires_in_days")
+    @classmethod
+    def expires_in_days_valid(cls, value: int) -> int:
+        if value not in ALLOWED_EXPIRATION_DAYS:
+            raise ValueError("expires_in_days must be one of 1, 7, 30")
         return value
 
 

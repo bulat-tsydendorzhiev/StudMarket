@@ -12,8 +12,8 @@ def _register(client: TestClient, username: str = "alice") -> None:
         json={
             "username": username,
             "email": f"{username}@example.com",
-            "password": "secret123",
-            "password_confirmation": "secret123",
+            "password": "Secret123",
+            "password_confirmation": "Secret123",
         },
     )
     assert response.status_code == 201
@@ -31,6 +31,8 @@ def test_get_user_returns_public_profile(client, db_session) -> None:
     data = response.json()
     assert data["id"] == str(user.id)
     assert data["username"] == "alice"
+    assert "avatar_path" in data
+    assert data["avatar_path"] is None
     assert "email" not in data
     assert "password" not in data
 

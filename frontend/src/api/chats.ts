@@ -15,7 +15,10 @@ export interface ConversationListItem {
   listing_title: string | null
   buyer_id: string
   seller_id: string
+  other_user: string
   last_message: string | null
+  last_message_at: string | null
+  unread_count: number
   created_at: string
   updated_at: string
 }
@@ -40,4 +43,6 @@ export const chatsApi = {
     apiClient.get<Message[]>(`/chat/conversations/${conversationId}/messages`),
   sendMessage: (conversationId: string, text: string) =>
     apiClient.post<Message>(`/chat/conversations/${conversationId}/messages`, { text }),
+  markConversationRead: (conversationId: string) =>
+    apiClient.patch<void>(`/chat/conversations/${conversationId}/read`),
 }

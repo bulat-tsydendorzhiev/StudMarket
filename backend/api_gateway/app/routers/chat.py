@@ -49,3 +49,8 @@ async def list_messages(conversation_id: str, request: Request) -> JSONResponse:
 @router.post("/conversations/{conversation_id}/messages")
 async def send_message(conversation_id: str, request: Request) -> JSONResponse:
     return await _proxy("POST", f"/conversations/{conversation_id}/messages", request)
+
+
+@router.patch("/conversations/{conversation_id}/read")
+async def mark_conversation_read(conversation_id: str, request: Request) -> JSONResponse:
+    return await _proxy("PATCH", f"/conversations/{conversation_id}/read", request)

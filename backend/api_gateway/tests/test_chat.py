@@ -222,3 +222,30 @@ def test_get_conversation_passes_through_404() -> None:
 
     assert response.status_code == 404
     assert response.json() == error_body
+
+
+def test_mark_conversation_read_proxies_to_chat_service() -> None:
+    response, upstream = _run_with_handler(
+        lambda _: httpx.Response(204),
+        "PATCH",
+        "/chat/conversations/conv-1/read",
+        cookies={"access_token": "some-jwt"},
+    )
+
+    assert response.status_code == 204
+    assert upstream.method == "PATCH"
+    assert upstream.url.endswith("/conversations/conv-1/read")
+    assert "chat-service" in upstream.url
+    assert upstream.cookies.get("access_token") == "some-jwt"
+
+
+def test_mark_conversation_read_passes_through_403() -> None:
+    error_body = {"detail": "Доступ запрещён"}
+    response, _ = _run_with_handler(
+        lambda _: httpx.Response(403, json=error_body),
+        "PATCH",
+        "/chat/conversations/conv-1/read",
+    )
+
+    assert response.status_code == 403
+    assert response.json() == error_body

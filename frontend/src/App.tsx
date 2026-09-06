@@ -8,8 +8,11 @@ import ChatPage from './pages/ChatPage'
 import ListingDetailPage from './pages/ListingDetailPage'
 import ListingEditPage from './pages/ListingEditPage'
 import ListingNewPage from './pages/ListingNewPage'
+import ListingPaymentPage from './pages/ListingPaymentPage'
 import LoginPage from './pages/LoginPage'
+import MyListingsPage from './pages/MyListingsPage'
 import NotFoundPage from './pages/NotFoundPage'
+import ProfilePage from './pages/ProfilePage'
 import RegisterPage from './pages/RegisterPage'
 
 export default function App() {
@@ -23,6 +26,14 @@ export default function App() {
             element={
               <RequireAuth>
                 <ListingNewPage />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/listings/payment"
+            element={
+              <RequireAuth>
+                <ListingPaymentPage />
               </RequireAuth>
             }
           />
@@ -48,6 +59,22 @@ export default function App() {
             element={
               <RequireAuth>
                 <ListingEditPage />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/profile"
+            element={
+              <RequireAuth>
+                <ProfilePage />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/my-listings"
+            element={
+              <RequireAuth>
+                <MyListingsPage />
               </RequireAuth>
             }
           />

@@ -4,6 +4,8 @@ import { Link, useParams } from 'react-router-dom'
 import { chatsApi, type Message } from '../api/chats'
 import { usersApi } from '../api/users'
 import { useAuth } from '../auth/AuthContext'
+import MessagesLink from '../components/MessagesLink'
+import UserAvatar, { avatarSrc } from '../components/UserAvatar'
 
 const POLL_INTERVAL_MS = 3000
 
@@ -67,6 +69,29 @@ export default function ChatPage() {
     },
   })
 
+  const markReadMutation = useMutation({
+    mutationFn: () => chatsApi.markConversationRead(conversationId!),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['chat', 'conversations'] })
+    },
+  })
+
+  useEffect(() => {
+    if (conversationId) {
+      markReadMutation.mutate()
+    }
+  }, [conversationId])
+
+  const hasUnreadIncoming =
+    messages?.some((message) => message.sender_id !== user?.id && message.read_at === null) ??
+    false
+
+  useEffect(() => {
+    if (conversationId && hasUnreadIncoming) {
+      markReadMutation.mutate()
+    }
+  }, [conversationId, hasUnreadIncoming])
+
   useEffect(() => {
     listRef.current?.scrollTo?.({ top: listRef.current.scrollHeight })
   }, [messages])
@@ -83,10 +108,17 @@ export default function ChatPage() {
   const renderMessage = (message: Message) => {
     const isMine = user?.id === message.sender_id
     const sender = isMine ? 'Вы' : (otherUser?.username ?? 'Собеседник')
+    const avatarPath = isMine ? user?.avatar_path : otherUser?.avatar_path
     return (
       <div
         className={`chat__message chat__message--${isMine ? 'mine' : 'other'}`}
       >
+        <img
+          className="chat__avatar"
+          src={avatarSrc(avatarPath)}
+          alt=""
+          aria-hidden="true"
+        />
         <div className="chat__bubble">
           <span className="chat__sender">{sender}</span>
           <p className="chat__text">{message.text}</p>
@@ -117,6 +149,8 @@ export default function ChatPage() {
         <Link className="listing-page__logo" to="/">
           Stud<span className="brand__market">Market</span>
         </Link>
+        <MessagesLink />
+        <UserAvatar />
       </header>
 
       <main className="chat__main">

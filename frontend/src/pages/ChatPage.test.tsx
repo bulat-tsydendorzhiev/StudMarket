@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { fireEvent, screen } from '@testing-library/react'
+import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { Route, Routes } from 'react-router-dom'
 import ChatPage from './ChatPage'
 import {
@@ -259,6 +259,59 @@ describe('ChatPage', () => {
     expect(other).toHaveClass('chat__message--other')
   })
 
+  it('shows avatars next to own and other messages', async () => {
+    stubFetch(
+      baseRoutes({
+        'GET /auth/users/user-other': {
+          status: 200,
+          body: {
+            id: OTHER_USER_ID,
+            username: OTHER_USERNAME,
+            avatar_path: '/avatars/cat.png',
+          },
+        },
+        'GET /chat/conversations/conv-1/messages': {
+          status: 200,
+          body: [
+            {
+              id: 'msg-1',
+              conversation_id: 'conv-1',
+              sender_id: OTHER_USER_ID,
+              text: 'Здравствуйте!',
+              created_at: '2026-09-05T10:00:00Z',
+              read_at: null,
+            },
+            {
+              id: 'msg-2',
+              conversation_id: 'conv-1',
+              sender_id: currentUser.id,
+              text: 'Привет!',
+              created_at: '2026-09-05T10:05:00Z',
+              read_at: null,
+            },
+          ],
+        },
+      }),
+    )
+    renderChatPage()
+
+    const otherText = await screen.findByText('Здравствуйте!')
+    const otherRow = otherText.closest('.chat__message')
+    await waitFor(() =>
+      expect(otherRow?.querySelector('img.chat__avatar')).toHaveAttribute(
+        'src',
+        '/avatars/cat.png',
+      ),
+    )
+
+    const mineText = screen.getByText('Привет!')
+    const mineRow = mineText.closest('.chat__message')
+    expect(mineRow?.querySelector('img.chat__avatar')).toHaveAttribute(
+      'src',
+      '/avatars/fox.png',
+    )
+  })
+
   it('sends a message and refreshes the list', async () => {
     const sentMessage = {
       id: 'msg-3',
@@ -323,5 +376,43 @@ describe('ChatPage', () => {
 
     await screen.findByText('Сообщений пока нет')
     expect(screen.getByRole('button', { name: 'Отправить' })).toBeDisabled()
+  })
+
+  it('marks messages as read when the chat opens', async () => {
+    let readCalled = false
+    const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input)
+      const method = init?.method ?? 'GET'
+      const respond = (status: number, body?: unknown) =>
+        Promise.resolve(
+          new Response(body === undefined ? null : JSON.stringify(body), {
+            status,
+            headers: { 'Content-Type': 'application/json' },
+          }),
+        )
+      if (url.endsWith('/chat/conversations/conv-1/read') && method === 'PATCH') {
+        readCalled = true
+        return respond(204)
+      }
+      if (url.endsWith('/chat/conversations/conv-1/messages') && method === 'GET') {
+        return respond(200, [])
+      }
+      if (url.endsWith('/chat/conversations/conv-1') && method === 'GET') {
+        return respond(200, conversation())
+      }
+      if (url.endsWith('/auth/users/user-other') && method === 'GET') {
+        return respond(200, { id: OTHER_USER_ID, username: OTHER_USERNAME })
+      }
+      if (url.endsWith('/auth/me') && method === 'GET') {
+        return respond(200, currentUser)
+      }
+      return respond(404)
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    renderChatPage()
+
+    await screen.findByText('Сообщений пока нет')
+    expect(readCalled).toBe(true)
   })
 })
