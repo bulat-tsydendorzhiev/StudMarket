@@ -12,8 +12,8 @@ def _register(client: TestClient, username: str = "alice") -> None:
         json={
             "username": username,
             "email": f"{username}@example.com",
-            "password": "secret123",
-            "password_confirmation": "secret123",
+            "password": "Secret123",
+            "password_confirmation": "Secret123",
         },
     )
     assert response.status_code == 201

@@ -8,7 +8,7 @@ from app.models import User
 def _register_payload(
     username: str = "alice",
     email: str = "alice@example.com",
-    password: str = "secret123",
+    password: str = "Secret123",
 ) -> dict:
     return {
         "username": username,
@@ -24,8 +24,8 @@ def test_register_success(client) -> None:
         json={
             "username": "alice",
             "email": "alice@example.com",
-            "password": "secret123",
-            "password_confirmation": "secret123",
+            "password": "Secret123",
+            "password_confirmation": "Secret123",
         },
     )
 
@@ -43,23 +43,23 @@ def test_password_is_stored_hashed(client, db_session) -> None:
         json={
             "username": "bob",
             "email": "bob@example.com",
-            "password": "secret123",
-            "password_confirmation": "secret123",
+            "password": "Secret123",
+            "password_confirmation": "Secret123",
         },
     )
 
     user = db_session.scalar(select(User).where(User.username == "bob"))
     assert user is not None
-    assert user.password_hash != "secret123"
-    assert bcrypt.checkpw("secret123".encode("utf-8"), user.password_hash.encode("utf-8"))
+    assert user.password_hash != "Secret123"
+    assert bcrypt.checkpw("Secret123".encode("utf-8"), user.password_hash.encode("utf-8"))
 
 
 def test_duplicate_username_rejected(client) -> None:
     payload = {
         "username": "carol",
         "email": "carol@example.com",
-        "password": "secret123",
-        "password_confirmation": "secret123",
+        "password": "Secret123",
+        "password_confirmation": "Secret123",
     }
     first = client.post("/auth/register", json=payload)
     assert first.status_code == 201
@@ -75,8 +75,8 @@ def test_duplicate_email_rejected(client) -> None:
     payload = {
         "username": "dave",
         "email": "dave@example.com",
-        "password": "secret123",
-        "password_confirmation": "secret123",
+        "password": "Secret123",
+        "password_confirmation": "Secret123",
     }
     first = client.post("/auth/register", json=payload)
     assert first.status_code == 201
@@ -94,7 +94,7 @@ def test_password_confirmation_mismatch_rejected(client) -> None:
         json={
             "username": "erin",
             "email": "erin@example.com",
-            "password": "secret123",
+            "password": "Secret123",
             "password_confirmation": "different",
         },
     )
@@ -107,8 +107,8 @@ def test_invalid_email_rejected(client) -> None:
         json={
             "username": "frank",
             "email": "not-an-email",
-            "password": "secret123",
-            "password_confirmation": "secret123",
+            "password": "Secret123",
+            "password_confirmation": "Secret123",
         },
     )
     assert response.status_code == 422
@@ -119,8 +119,8 @@ def test_missing_username_rejected(client) -> None:
         "/auth/register",
         json={
             "email": "grace@example.com",
-            "password": "secret123",
-            "password_confirmation": "secret123",
+            "password": "Secret123",
+            "password_confirmation": "Secret123",
         },
     )
     assert response.status_code == 422
@@ -137,6 +137,35 @@ def test_missing_password_rejected(client) -> None:
         },
     )
     assert response.status_code == 422
+
+
+def _assert_weak_password_rejected(client, password: str) -> None:
+    response = client.post(
+        "/auth/register",
+        json={
+            "username": "user",
+            "email": "user@example.com",
+            "password": password,
+            "password_confirmation": password,
+        },
+    )
+    assert response.status_code == 422
+
+
+def test_password_too_short_rejected(client) -> None:
+    _assert_weak_password_rejected(client, "Ab1")
+
+
+def test_password_without_uppercase_rejected(client) -> None:
+    _assert_weak_password_rejected(client, "secret123")
+
+
+def test_password_without_lowercase_rejected(client) -> None:
+    _assert_weak_password_rejected(client, "SECRET123")
+
+
+def test_password_without_digit_rejected(client) -> None:
+    _assert_weak_password_rejected(client, "Secretabc")
 
 
 def test_register_sets_auth_cookie(client) -> None:
