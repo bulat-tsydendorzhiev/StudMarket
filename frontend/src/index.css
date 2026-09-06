@@ -2816,6 +2816,21 @@ button {
   color: #6f796f;
 }
 
+.site-footer__github {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+  font-size: 14px;
+  color: #6f796f;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.site-footer__github:hover {
+  color: #26352b;
+}
+
 .site-footer__heading {
   margin: 0 0 16px;
   font-size: 14px;

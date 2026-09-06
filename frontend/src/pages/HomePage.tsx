@@ -227,7 +227,7 @@ export default function HomePage() {
           <div className="how-it-works__grid">
             {[
               { step: '1', title: 'Найди нужное', text: 'Выбери предпочтительные локации и отфильтруй объявления по тегам.' },
-              { step: '2', title: 'Напиши соседу', text: 'Договорись о встрече прямо в кампусе — всё рядом.' },
+              { step: '2', title: 'Напиши продавцу', text: 'Договорись о месте и времени встречи.' },
               { step: '3', title: 'Забери безопасно', text: 'Профили студентов и локальные встречи делают обмен спокойнее.' },
             ].map((item) => (
               <div className="how-it-works__item" key={item.step}>
