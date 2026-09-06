@@ -2,7 +2,10 @@ import { useMutation } from '@tanstack/react-query'
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { listingsApi } from '../api/listings'
-import ListingForm, { type ListingFormValues } from '../components/ListingForm'
+import ListingForm, {
+  PAID_EXPIRATION_DAYS,
+  type ListingFormValues,
+} from '../components/ListingForm'
 import PhotoPicker from '../components/PhotoPicker'
 
 export default function ListingNewPage() {
@@ -42,7 +45,13 @@ export default function ListingNewPage() {
           submittingLabel="Создание…"
           pending={mutation.isPending}
           error={mutation.isError ? 'Не удалось создать объявление' : ''}
-          onSubmit={(values) => mutation.mutate(values)}
+          onSubmit={(values) => {
+            if (values.expiresInDays === PAID_EXPIRATION_DAYS) {
+              navigate('/listings/payment')
+              return
+            }
+            mutation.mutate(values)
+          }}
         />
 
         <section className="listing-form__images">

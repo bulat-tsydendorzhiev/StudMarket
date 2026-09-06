@@ -9,6 +9,8 @@ export const EXPIRATION_OPTIONS = [
   { value: 30, label: '30 дней' },
 ]
 
+export const PAID_EXPIRATION_DAYS = 30
+
 export const DEFAULT_EXPIRATION_DAYS = 7
 
 export interface ListingFormValues {
@@ -193,6 +195,12 @@ export default function ListingForm({
             ))}
           </div>
         </fieldset>
+      )}
+
+      {showExpiration && expiresInDays === PAID_EXPIRATION_DAYS && (
+        <p className="listing-form__expiration-info" role="status">
+          Размещение на 30 дней платное — после нажатия «Создать объявление» нужно будет оплатить размещение.
+        </p>
       )}
 
       <fieldset className="listing-form__field listing-form__tags">

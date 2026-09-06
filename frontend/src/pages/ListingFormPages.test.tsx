@@ -3,6 +3,7 @@ import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { Route, Routes } from 'react-router-dom'
 import ListingEditPage from './ListingEditPage'
 import ListingNewPage from './ListingNewPage'
+import ListingPaymentPage from './ListingPaymentPage'
 import {
   authenticatedAuthRoutes,
   guestAuthRoutes,
@@ -18,6 +19,7 @@ function renderNewPage() {
   return renderWithProviders(
     <Routes>
       <Route path="/listings/new" element={<ListingNewPage />} />
+      <Route path="/listings/payment" element={<ListingPaymentPage />} />
       <Route path="/listings/:id" element={<div>Listing Page</div>} />
     </Routes>,
     ['/listings/new'],
@@ -72,6 +74,38 @@ describe('ListingNewPage', () => {
     expect(screen.getByRole('radio', { name: '7 дней' })).toBeChecked()
     expect(screen.getByRole('radio', { name: '1 день' })).not.toBeChecked()
     expect(screen.getByRole('radio', { name: '30 дней' })).not.toBeChecked()
+  })
+
+  it('shows a payment notice when the 30-day option is selected', () => {
+    stubFetch(guestAuthRoutes())
+    renderNewPage()
+
+    expect(
+      screen.queryByText(/Размещение на 30 дней платное/),
+    ).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('radio', { name: '30 дней' }))
+
+    expect(
+      screen.getByText(/Размещение на 30 дней платное/),
+    ).toBeInTheDocument()
+  })
+
+  it('redirects to the payment page for the 30-day option without creating a listing', async () => {
+    const fetchMock = stubFetch(guestAuthRoutes())
+    renderNewPage()
+
+    fireEvent.click(screen.getByRole('radio', { name: '30 дней' }))
+    fillForm()
+    fireEvent.click(screen.getByRole('button', { name: 'Создать объявление' }))
+
+    expect(
+      await screen.findByRole('heading', { name: 'Оплата размещения' }),
+    ).toBeInTheDocument()
+    const createCall = fetchMock.mock.calls.find(([input]) =>
+      String(input).endsWith('/listings'),
+    )
+    expect(createCall).toBeUndefined()
   })
 
   it('submits the chosen expiration duration', async () => {
