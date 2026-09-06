@@ -47,7 +47,7 @@ export default function ListingDetailPage() {
     <div className="listing-detail">
       <header className="listing-page__header">
         <Link className="listing-page__logo" to="/">
-          StudMarket
+          Stud<span className="brand__market">Market</span>
         </Link>
       </header>
 

@@ -83,7 +83,9 @@ export default function HomePage() {
   return (
     <div className="home">
       <header className="home__header">
-        <span className="home__logo">StudMarket</span>
+        <span className="home__logo">
+          Stud<span className="brand__market">Market</span>
+        </span>
         <nav className="home__nav">
           {isAuthenticated && user ? (
             <>
@@ -117,7 +119,7 @@ export default function HomePage() {
       </header>
 
       <main className="home__main">
-        <h1 className="home__title">StudMarket</h1>
+        <h1 className="home__title" aria-label="StudMarket">Stud<span className="brand__market">Market</span></h1>
         <p className="home__subtitle">Купить и продать среди студентов</p>
 
         <div className="home__content">
@@ -154,6 +156,7 @@ export default function HomePage() {
                   <label className="filters__item" key={location.id}>
                     <input
                       type="checkbox"
+                      className="filters__checkbox"
                       checked={selectedLocations.includes(location.name)}
                       onChange={() => toggleLocation(location.name)}
                     />

@@ -85,7 +85,7 @@ export default function RegisterPage() {
     <div className="auth-page">
       <header className="auth-header">
         <Link className="auth-logo" to="/">
-          StudMarket
+          Stud<span className="brand__market">Market</span>
         </Link>
       </header>
 
