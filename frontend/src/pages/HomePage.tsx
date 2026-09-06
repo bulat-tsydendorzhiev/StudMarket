@@ -79,14 +79,8 @@ export default function HomePage() {
   return (
     <div className="home">
       <header className="home__header">
-<<<<<<< HEAD
-        <span className="home__logo">
-          Stud<span className="brand__market">Market</span>
-        </span>
-=======
         <span className="home__logo">StudMarket</span>
         <SearchBar defaultValue={query} />
->>>>>>> origin/main
         <nav className="home__nav">
           {isAuthenticated && user ? (
             <>
