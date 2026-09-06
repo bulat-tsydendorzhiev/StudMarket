@@ -1,3 +1,4 @@
+import logging
 import uuid
 from datetime import datetime, timezone
 
@@ -14,10 +15,24 @@ from ..security import decode_access_token
 
 router = APIRouter(prefix="/conversations", tags=["messages"])
 
+logger = logging.getLogger(__name__)
+
+
+def _client_ip(request: Request) -> str:
+    return request.client.host if request.client else "unknown"
+
+
+def _log_security(event: str, request: Request, user_id: uuid.UUID | None = None) -> None:
+    fields: dict[str, str] = {"event": event, "remote_ip": _client_ip(request)}
+    if user_id is not None:
+        fields["user_id"] = str(user_id)
+    logger.warning("security event: %s", fields)
+
 
 def _get_current_user_id(request: Request) -> uuid.UUID:
     token = request.cookies.get(settings.jwt_cookie_name)
     if not token:
+        _log_security("auth.failed", request)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Не авторизован",
@@ -25,6 +40,7 @@ def _get_current_user_id(request: Request) -> uuid.UUID:
     try:
         user_id = uuid.UUID(decode_access_token(token))
     except (ValueError, TypeError, jwt.PyJWTError):
+        _log_security("auth.failed.invalid_token", request)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Не авторизован",
@@ -33,7 +49,7 @@ def _get_current_user_id(request: Request) -> uuid.UUID:
 
 
 def _get_participant_conversation(
-    db: Session, conversation_id: uuid.UUID, user_id: uuid.UUID
+    db: Session, conversation_id: uuid.UUID, user_id: uuid.UUID, request: Request
 ) -> Conversation:
     conversation = db.scalar(
         select(Conversation).where(Conversation.id == conversation_id)
@@ -44,6 +60,7 @@ def _get_participant_conversation(
             detail="Чат не найден",
         )
     if user_id not in (conversation.buyer_id, conversation.seller_id):
+        _log_security("auth.forbidden.not_participant", request, user_id=user_id)
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Доступ запрещён",
@@ -58,7 +75,7 @@ def list_messages(
     db: Session = Depends(get_db),
 ) -> list[Message]:
     user_id = _get_current_user_id(request)
-    _get_participant_conversation(db, conversation_id, user_id)
+    _get_participant_conversation(db, conversation_id, user_id, request)
 
     messages = db.scalars(
         select(Message)
@@ -80,7 +97,7 @@ def send_message(
     db: Session = Depends(get_db),
 ) -> Message:
     user_id = _get_current_user_id(request)
-    conversation = _get_participant_conversation(db, conversation_id, user_id)
+    conversation = _get_participant_conversation(db, conversation_id, user_id, request)
 
     text = payload.text.strip()
     if not text:
@@ -111,7 +128,7 @@ def mark_conversation_read(
     db: Session = Depends(get_db),
 ) -> None:
     user_id = _get_current_user_id(request)
-    _get_participant_conversation(db, conversation_id, user_id)
+    _get_participant_conversation(db, conversation_id, user_id, request)
 
     db.execute(
         update(Message)
