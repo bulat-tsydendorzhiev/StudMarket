@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import { listingsApi } from '../api/listings'
 import ImageManager from '../components/ImageManager'
 import ListingForm from '../components/ListingForm'
+import MessagesLink from '../components/MessagesLink'
 
 export default function ListingEditPage() {
   const { id } = useParams<{ id: string }>()
@@ -38,6 +39,7 @@ export default function ListingEditPage() {
         <Link className="listing-page__logo" to="/">
           StudMarket
         </Link>
+        <MessagesLink />
       </header>
 
       <main className="listing-page__main">

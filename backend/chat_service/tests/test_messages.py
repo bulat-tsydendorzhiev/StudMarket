@@ -4,6 +4,7 @@ from datetime import datetime, timedelta, timezone
 import jwt
 import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy import select
 
 from app.config import settings
 from app.models import Conversation, Message
@@ -198,5 +199,66 @@ def test_send_message_404_when_conversation_missing(
     response = client.post(
         f"/conversations/{missing_id}/messages", json={"text": "Привет"}
     )
+
+    assert response.status_code == 404
+
+
+def test_mark_read_requires_auth(client: TestClient, conversation_id) -> None:
+    response = client.patch(f"/conversations/{conversation_id}/read")
+
+    assert response.status_code == 401
+
+
+def test_mark_read_forbidden_for_outsider(
+    client: TestClient, conversation_id
+) -> None:
+    _auth(client, OUTSIDER_ID)
+
+    response = client.patch(f"/conversations/{conversation_id}/read")
+
+    assert response.status_code == 403
+
+
+def test_mark_read_sets_read_at_for_other_participant_messages(
+    client: TestClient, db_session
+) -> None:
+    conversation_id = _seed_conversation(db_session)
+    for sender in (BUYER_ID, SELLER_ID, BUYER_ID):
+        db_session.add(
+            Message(
+                conversation_id=conversation_id,
+                sender_id=sender,
+                text=f"Сообщение от {sender}",
+            )
+        )
+    db_session.commit()
+    _auth(client, BUYER_ID)
+
+    response = client.patch(f"/conversations/{conversation_id}/read")
+
+    assert response.status_code == 204
+    messages = db_session.scalars(
+        select(Message).where(Message.conversation_id == conversation_id)
+    ).all()
+    by_sender = {message.sender_id: message for message in messages}
+    assert by_sender[SELLER_ID].read_at is not None
+    assert by_sender[BUYER_ID].read_at is None
+
+
+def test_mark_read_is_idempotent(client: TestClient, conversation_id) -> None:
+    _auth(client, BUYER_ID)
+
+    first = client.patch(f"/conversations/{conversation_id}/read")
+    second = client.patch(f"/conversations/{conversation_id}/read")
+
+    assert first.status_code == 204
+    assert second.status_code == 204
+
+
+def test_mark_read_404_when_conversation_missing(client: TestClient) -> None:
+    _auth(client, BUYER_ID)
+    missing_id = uuid.uuid4()
+
+    response = client.patch(f"/conversations/{missing_id}/read")
 
     assert response.status_code == 404

@@ -214,6 +214,7 @@ def test_list_conversations_includes_last_message(
             conversation_id=conversation_id,
             sender_id=BUYER_ID,
             text="Первое сообщение",
+            created_at=datetime.now(timezone.utc) - timedelta(minutes=1),
         )
     )
     db_session.commit()
@@ -222,6 +223,7 @@ def test_list_conversations_includes_last_message(
             conversation_id=conversation_id,
             sender_id=SELLER_ID,
             text="Последнее",
+            created_at=datetime.now(timezone.utc),
         )
     )
     db_session.commit()
@@ -345,3 +347,134 @@ def test_get_conversation_404_when_missing(client: TestClient) -> None:
     response = client.get(f"/conversations/{uuid.uuid4()}")
 
     assert response.status_code == 404
+
+
+def test_list_conversations_includes_last_message_at(
+    client: TestClient, db_session, mock_listing_service
+) -> None:
+    _patch_listing_service(mock_listing_service, _listing_response())
+    conversation_id = uuid.uuid4()
+    _seed_conversation(db_session, conversation_id, LISTING_ID, BUYER_ID, SELLER_ID)
+    sent_at = datetime.now(timezone.utc) - timedelta(minutes=1)
+    db_session.add(
+        Message(
+            conversation_id=conversation_id,
+            sender_id=SELLER_ID,
+            text="Привет!",
+            created_at=sent_at,
+        )
+    )
+    db_session.commit()
+    _auth(client, BUYER_ID)
+
+    response = client.get("/conversations")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert len(body) == 1
+    assert body[0]["last_message"] == "Привет!"
+    assert (
+        datetime.fromisoformat(body[0]["last_message_at"].replace("Z", "+00:00"))
+        == sent_at.replace(tzinfo=None)
+    )
+
+
+def test_list_conversations_last_message_at_is_none_when_empty(
+    client: TestClient, db_session, mock_listing_service
+) -> None:
+    _patch_listing_service(mock_listing_service, _listing_response())
+    conversation_id = uuid.uuid4()
+    _seed_conversation(db_session, conversation_id, LISTING_ID, BUYER_ID, SELLER_ID)
+    _auth(client, SELLER_ID)
+
+    response = client.get("/conversations")
+
+    assert response.status_code == 200
+    assert response.json()[0]["last_message_at"] is None
+
+
+def test_other_user_is_the_other_participant(
+    client: TestClient, db_session, mock_listing_service
+) -> None:
+    _patch_listing_service(mock_listing_service, _listing_response())
+    conversation_id = uuid.uuid4()
+    _seed_conversation(db_session, conversation_id, LISTING_ID, BUYER_ID, SELLER_ID)
+
+    _auth(client, BUYER_ID)
+    response = client.get("/conversations")
+    assert response.status_code == 200
+    assert response.json()[0]["other_user"] == str(SELLER_ID)
+
+    _auth(client, SELLER_ID)
+    response = client.get("/conversations")
+    assert response.status_code == 200
+    assert response.json()[0]["other_user"] == str(BUYER_ID)
+
+
+def test_list_conversations_includes_unread_count(
+    client: TestClient, db_session, mock_listing_service
+) -> None:
+    _patch_listing_service(mock_listing_service, _listing_response())
+    conversation_id = uuid.uuid4()
+    _seed_conversation(db_session, conversation_id, LISTING_ID, BUYER_ID, SELLER_ID)
+
+    db_session.add_all(
+        [
+            Message(
+                conversation_id=conversation_id,
+                sender_id=SELLER_ID,
+                text="Не прочитано 1",
+                created_at=datetime.now(timezone.utc) - timedelta(minutes=3),
+            ),
+            Message(
+                conversation_id=conversation_id,
+                sender_id=SELLER_ID,
+                text="Не прочитано 2",
+                created_at=datetime.now(timezone.utc) - timedelta(minutes=2),
+            ),
+            Message(
+                conversation_id=conversation_id,
+                sender_id=SELLER_ID,
+                text="Прочитано",
+                created_at=datetime.now(timezone.utc) - timedelta(minutes=1),
+                read_at=datetime.now(timezone.utc),
+            ),
+            Message(
+                conversation_id=conversation_id,
+                sender_id=BUYER_ID,
+                text="Своё слово",
+                created_at=datetime.now(timezone.utc),
+            ),
+        ]
+    )
+    db_session.commit()
+    _auth(client, BUYER_ID)
+
+    response = client.get("/conversations")
+
+    assert response.status_code == 200
+    assert response.json()[0]["unread_count"] == 2
+
+
+def test_unread_count_is_zero_when_no_unread_messages(
+    client: TestClient, db_session, mock_listing_service
+) -> None:
+    _patch_listing_service(mock_listing_service, _listing_response())
+    conversation_id = uuid.uuid4()
+    _seed_conversation(db_session, conversation_id, LISTING_ID, BUYER_ID, SELLER_ID)
+    db_session.add(
+        Message(
+            conversation_id=conversation_id,
+            sender_id=SELLER_ID,
+            text="Все прочитано",
+            created_at=datetime.now(timezone.utc),
+            read_at=datetime.now(timezone.utc),
+        )
+    )
+    db_session.commit()
+    _auth(client, BUYER_ID)
+
+    response = client.get("/conversations")
+
+    assert response.status_code == 200
+    assert response.json()[0]["unread_count"] == 0

@@ -404,6 +404,31 @@ body {
   text-decoration: none;
 }
 
+.listing-page__header .messages-link {
+  margin-left: auto;
+}
+
+.messages-link {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  line-height: 1;
+  text-decoration: none;
+  color: #333;
+}
+
+.messages-link__dot {
+  position: absolute;
+  top: -4px;
+  right: -6px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #e53935;
+}
+
 .listing-page__main {
   flex: 1;
   display: flex;
@@ -1255,10 +1280,9 @@ body {
 
 .chat-list__item {
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 4px;
-  padding: 14px 16px;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
   background: #fff;
   border: 1px solid #e3e6ea;
   border-radius: 12px;
@@ -1271,16 +1295,75 @@ body {
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
 }
 
-.chat-list__item-title {
-  font-size: 15px;
-  font-weight: 600;
+.chat-list__photo {
+  flex-shrink: 0;
+  width: 56px;
+  height: 56px;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #eef0f3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.chat-list__item-subtitle {
+.chat-list__photo-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.chat-list__photo-placeholder {
+  font-size: 22px;
+  opacity: 0.6;
+}
+
+.chat-list__body {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+
+.chat-list__title {
+  font-size: 15px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.chat-list__last {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-width: 0;
+}
+
+.chat-list__subtitle {
   font-size: 13px;
   color: #6b7280;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 100%;
+}
+
+.chat-list__time {
+  flex-shrink: 0;
+  margin-left: auto;
+  font-size: 12px;
+  color: #9aa0a6;
+}
+
+.chat-list__dot {
+  flex-shrink: 0;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #e53935;
 }

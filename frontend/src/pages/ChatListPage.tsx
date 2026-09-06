@@ -1,22 +1,34 @@
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { chatsApi, type ConversationListItem } from '../api/chats'
-import { usersApi } from '../api/users'
-import { useAuth } from '../auth/AuthContext'
+import { imageUrl, listingsApi } from '../api/listings'
+import MessagesLink from '../components/MessagesLink'
+
+function formatListTime(timestamp: string): string {
+  const date = new Date(timestamp)
+  const now = new Date()
+  if (date.toDateString() === now.toDateString()) {
+    return date.toLocaleTimeString('ru-RU', {
+      hour: '2-digit',
+      minute: '2-digit',
+    })
+  }
+  return date.toLocaleDateString('ru-RU', {
+    day: 'numeric',
+    month: 'numeric',
+  })
+}
 
 function ConversationRow({ conversation }: { conversation: ConversationListItem }) {
-  const { user } = useAuth()
-
-  const otherUserId =
-    conversation && user && conversation.buyer_id === user.id
-      ? conversation.seller_id
-      : (conversation?.buyer_id ?? null)
-
-  const { data: otherUser } = useQuery({
-    queryKey: ['auth', 'users', otherUserId],
-    queryFn: () => usersApi.get(otherUserId!),
-    enabled: Boolean(otherUserId),
+  const { data: listing } = useQuery({
+    queryKey: ['listings', conversation.listing_id],
+    queryFn: () => listingsApi.get(conversation.listing_id),
+    enabled: Boolean(conversation.listing_id),
   })
+
+  const photo = listing?.images?.[0]
+  const title = conversation.listing_title ?? 'Объявление'
+  const hasUnread = (conversation.unread_count ?? 0) > 0
 
   return (
     <Link
@@ -24,12 +36,33 @@ function ConversationRow({ conversation }: { conversation: ConversationListItem 
       key={conversation.id}
       to={`/chat/${conversation.id}`}
     >
-      <span className="chat-list__item-title">
-        {otherUser?.username ?? 'Собеседник'}
-      </span>
-      <span className="chat-list__item-subtitle">
-        {conversation.last_message ?? 'Сообщений пока нет'}
-      </span>
+      <div className="chat-list__photo">
+        {photo ? (
+          <img
+            className="chat-list__photo-img"
+            src={imageUrl(photo.url)}
+            alt={title}
+          />
+        ) : (
+          <span className="chat-list__photo-placeholder" aria-hidden="true">📷</span>
+        )}
+      </div>
+
+      <div className="chat-list__body">
+        <span className="chat-list__title">{title}</span>
+        <span className="chat-list__last">
+          <span className="chat-list__subtitle">
+            {conversation.last_message ?? 'Сообщений пока нет'}
+          </span>
+          {conversation.last_message_at && (
+            <span className="chat-list__time">
+              {formatListTime(conversation.last_message_at)}
+            </span>
+          )}
+        </span>
+      </div>
+
+      {hasUnread && <span className="chat-list__dot" aria-label="Непрочитанные сообщения" />}
     </Link>
   )
 }
@@ -46,6 +79,7 @@ export default function ChatListPage() {
         <Link className="listing-page__logo" to="/">
           StudMarket
         </Link>
+        <MessagesLink />
       </header>
 
       <main className="chat-list__main">
