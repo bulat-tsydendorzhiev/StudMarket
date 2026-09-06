@@ -19,13 +19,12 @@ describe('ListingPaymentPage', () => {
     expect(screen.getByText(/Отсканируйте QR-код/)).toBeInTheDocument()
   })
 
-  it('reserves a placeholder area for the QR code', () => {
+  it('renders the QR code image', () => {
     stubFetch(guestAuthRoutes())
     renderWithProviders(<ListingPaymentPage />, ['/listings/payment'])
 
-    expect(
-      screen.getByText('QR-код появится после подключения оплаты'),
-    ).toBeInTheDocument()
+    const qr = screen.getByRole('img', { name: 'QR-код для оплаты' })
+    expect(qr).toHaveAttribute('src', '/payment-qr.webp')
   })
 
   it('provides a link back to the homepage', () => {

@@ -19,14 +19,8 @@ export default function ListingPaymentPage() {
           <p className="payment__text">
             Отсканируйте QR-код в приложении вашего банка и оплатите размещение.
           </p>
-          <div
-            className="payment__qr"
-            role="img"
-            aria-label="Место для QR-кода оплаты"
-          >
-            <span className="payment__qr-placeholder">
-              QR-код появится после подключения оплаты
-            </span>
+          <div className="payment__qr">
+            <img src="/payment-qr.webp" alt="QR-код для оплаты" />
           </div>
           <Link className="payment__home" to="/">
             На главную
