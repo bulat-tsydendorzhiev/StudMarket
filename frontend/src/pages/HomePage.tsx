@@ -11,6 +11,7 @@ import {
   type Tag,
 } from '../api/listings'
 import { useAuth } from '../auth/AuthContext'
+import MessagesLink from '../components/MessagesLink'
 
 export function formatPrice(price: number): string {
   if (price === 0) {
@@ -87,9 +88,7 @@ export default function HomePage() {
         <nav className="home__nav">
           {isAuthenticated && user ? (
             <>
-              <Link className="home__link" to="/chat">
-                Чаты
-              </Link>
+              <MessagesLink />
               <Link className="home__link home__link--primary" to="/listings/new">
                 Разместить объявление
               </Link>
