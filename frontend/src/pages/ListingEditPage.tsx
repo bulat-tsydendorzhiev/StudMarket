@@ -4,6 +4,7 @@ import { listingsApi } from '../api/listings'
 import ImageManager from '../components/ImageManager'
 import ListingForm, { type ListingFormValues } from '../components/ListingForm'
 import MessagesLink from '../components/MessagesLink'
+import UserAvatar from '../components/UserAvatar'
 
 export default function ListingEditPage() {
   const { id } = useParams<{ id: string }>()
@@ -34,6 +35,7 @@ export default function ListingEditPage() {
           StudMarket
         </Link>
         <MessagesLink />
+        <UserAvatar />
       </header>
 
       <main className="listing-page__main">

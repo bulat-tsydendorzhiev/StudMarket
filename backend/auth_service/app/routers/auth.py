@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 from ..config import settings
 from ..database import get_db
 from ..models import User
-from ..schemas import LoginRequest, LoginResponse, RegisterRequest, RegisterResponse
+from ..schemas import LoginRequest, LoginResponse, ProfileUpdateRequest, RegisterRequest, RegisterResponse
 from ..security import (
     burn_password_check,
     create_access_token,
@@ -127,6 +127,60 @@ def login(payload: LoginRequest, response: Response, db: Session = Depends(get_d
 @router.get("/me", response_model=LoginResponse)
 def me(request: Request, db: Session = Depends(get_db)) -> User:
     return _get_current_user(request, db)
+
+
+@router.patch("/profile", response_model=LoginResponse)
+def update_profile(
+    payload: ProfileUpdateRequest,
+    request: Request,
+    db: Session = Depends(get_db),
+) -> User:
+    user = _get_current_user(request, db)
+    changes = payload.model_dump(exclude_unset=True)
+
+    if "username" in changes and changes["username"] != user.username:
+        taken = db.scalar(
+            select(User).where(
+                User.username == changes["username"],
+                User.id != user.id,
+            )
+        )
+        if taken is not None:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Имя пользователя уже занято",
+            )
+        user.username = changes["username"]
+
+    if "email" in changes and changes["email"] != user.email:
+        taken = db.scalar(
+            select(User).where(
+                User.email == changes["email"],
+                User.id != user.id,
+            )
+        )
+        if taken is not None:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Email уже зарегистрирован",
+            )
+        user.email = changes["email"]
+
+    if "new_password" in changes and changes["new_password"]:
+        current = payload.current_password or ""
+        if not verify_password(current, user.password_hash):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Неверный текущий пароль",
+            )
+        user.password_hash = hash_password(changes["new_password"])
+
+    if "avatar_path" in changes:
+        user.avatar_path = changes["avatar_path"]
+
+    db.commit()
+    db.refresh(user)
+    return user
 
 
 @router.post("/logout", response_class=Response, status_code=status.HTTP_204_NO_CONTENT)

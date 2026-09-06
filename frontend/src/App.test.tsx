@@ -181,30 +181,35 @@ describe('App', () => {
     expect(screen.queryByRole('heading', { name: 'Регистрация' })).not.toBeInTheDocument()
   })
 
-  it('shows the username and a logout button for authenticated users', async () => {
+  it('shows the avatar and a "Разместить объявление" link for authenticated users', async () => {
     stubFetch(authenticatedRoutes())
     window.history.pushState({}, '', '/')
     renderApp()
 
-    expect(await screen.findByText('alice')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Выйти' })).toBeInTheDocument()
-    expect(
-      screen.getByRole('link', { name: 'Разместить объявление' }),
-    ).toBeInTheDocument()
+    expect(await screen.findByText('Разместить объявление')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Профиль' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Выйти' })).not.toBeInTheDocument()
+    expect(screen.queryByText('alice')).not.toBeInTheDocument()
   })
 
-  it('logs out and switches back to guest UI', async () => {
+  it('logs out from the avatar menu and switches back to guest UI', async () => {
     stubFetch(authenticatedRoutes())
     window.history.pushState({}, '', '/')
     renderApp()
 
-    const logoutButton = await screen.findByRole('button', { name: 'Выйти' })
+    const avatarButton = await screen.findByRole('button', { name: 'Профиль' })
     await act(async () => {
-      logoutButton.click()
+      avatarButton.click()
+    })
+    const logoutItem = await screen.findByRole('menuitem', { name: 'Выйти' })
+    await act(async () => {
+      logoutItem.click()
     })
 
     expect(await screen.findByRole('link', { name: 'Войти' })).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'Выйти' })).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Профиль' }),
+    ).not.toBeInTheDocument()
   })
 
   it('redirects guests away from "/listings/new" to "/login"', async () => {
@@ -272,6 +277,28 @@ describe('App', () => {
     ).toBeInTheDocument()
   })
 
+  it('redirects guests away from "/profile" to "/login"', async () => {
+    stubFetch(guestRoutes())
+    window.history.pushState({}, '', '/profile')
+    renderApp()
+
+    expect(await screen.findByRole('heading', { name: 'Вход' })).toBeInTheDocument()
+  })
+
+  it('renders the profile page for authenticated users', async () => {
+    stubFetch(authenticatedRoutes())
+    window.history.pushState({}, '', '/profile')
+    renderApp()
+
+    expect(await screen.findByRole('heading', { name: 'Профиль' })).toBeInTheDocument()
+    expect(screen.getByLabelText('Имя пользователя')).toHaveValue('alice')
+    expect(screen.getByLabelText('Email')).toHaveValue('alice@example.com')
+    fireEvent.click(screen.getByRole('button', { name: 'Профиль' }))
+    expect(
+      screen.getByRole('menuitem', { name: 'Редактировать профиль' }),
+    ).toHaveAttribute('href', '/profile')
+  })
+
   it('shows the authenticated UI on the home page after login', async () => {
     stubFetch({
       ...guestRoutes(),
@@ -293,7 +320,7 @@ describe('App', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Войти' }))
 
     expect(await screen.findByRole('heading', { name: 'StudMarket' })).toBeInTheDocument()
-    expect(await screen.findByText('alice')).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: 'Профиль' })).toBeInTheDocument()
     expect(screen.queryByRole('link', { name: 'Войти' })).not.toBeInTheDocument()
     expect(
       screen.queryByRole('link', { name: 'Зарегистрироваться' }),
@@ -327,7 +354,7 @@ describe('App', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Создать аккаунт' }))
 
     expect(await screen.findByRole('heading', { name: 'StudMarket' })).toBeInTheDocument()
-    expect(await screen.findByText('alice')).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: 'Профиль' })).toBeInTheDocument()
     expect(screen.queryByRole('link', { name: 'Войти' })).not.toBeInTheDocument()
     expect(
       screen.queryByRole('link', { name: 'Зарегистрироваться' }),

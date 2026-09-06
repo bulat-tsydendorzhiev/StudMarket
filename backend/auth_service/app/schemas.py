@@ -44,6 +44,7 @@ class RegisterResponse(BaseModel):
     id: uuid.UUID
     username: str
     email: str
+    avatar_path: str | None = None
 
 
 class LoginRequest(BaseModel):
@@ -72,6 +73,7 @@ class LoginResponse(BaseModel):
     id: uuid.UUID
     username: str
     email: str
+    avatar_path: str | None = None
 
 
 class UserPublic(BaseModel):
@@ -79,3 +81,55 @@ class UserPublic(BaseModel):
 
     id: uuid.UUID
     username: str
+
+
+ALLOWED_AVATARS: list[str] = [
+    "/avatars/fox.png",
+    "/avatars/cat.png",
+    "/avatars/dog.png",
+    "/avatars/owl.png",
+    "/avatars/penguin.png",
+    "/avatars/polar_bear.png",
+]
+
+
+class ProfileUpdateRequest(BaseModel):
+    username: str | None = None
+    email: EmailStr | None = None
+    current_password: str | None = None
+    new_password: str | None = None
+    avatar_path: str | None = None
+
+    @field_validator("username")
+    @classmethod
+    def username_not_blank(cls, value: str | None) -> str | None:
+        if value is None:
+            return value
+        value = value.strip()
+        if not value:
+            raise ValueError("username is required")
+        return value
+
+    @field_validator("email")
+    @classmethod
+    def email_not_blank(cls, value: str | None) -> str | None:
+        if value is None:
+            return value
+        if not value.strip():
+            raise ValueError("email is required")
+        return value
+
+    @field_validator("avatar_path")
+    @classmethod
+    def avatar_must_be_allowed(cls, value: str | None) -> str | None:
+        if value is None:
+            return value
+        if value not in ALLOWED_AVATARS:
+            raise ValueError("avatar not in allowed list")
+        return value
+
+    @model_validator(mode="after")
+    def password_change_requires_current(self) -> "ProfileUpdateRequest":
+        if self.new_password and not self.current_password:
+            raise ValueError("current_password is required when changing password")
+        return self

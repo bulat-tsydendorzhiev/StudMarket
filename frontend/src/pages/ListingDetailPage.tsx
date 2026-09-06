@@ -6,6 +6,7 @@ import { listingsApi } from '../api/listings'
 import { useAuth } from '../auth/AuthContext'
 import ImageManager from '../components/ImageManager'
 import MessagesLink from '../components/MessagesLink'
+import UserAvatar from '../components/UserAvatar'
 import { formatPrice } from './HomePage'
 
 function daysUntil(expiresAt: string | null): number | null {
@@ -73,6 +74,7 @@ export default function ListingDetailPage() {
           StudMarket
         </Link>
         <MessagesLink />
+        <UserAvatar />
       </header>
 
       <main className="listing-detail__main">

@@ -64,6 +64,25 @@ async def me(request: Request) -> JSONResponse:
     return JSONResponse(status_code=response.status_code, content=content)
 
 
+@router.patch("/profile")
+async def update_profile(request: Request) -> JSONResponse:
+    body = await request.body()
+    url = f"{settings.auth_service_url}/auth/profile"
+    try:
+        async with httpx.AsyncClient(timeout=10) as client:
+            response = await client.patch(
+                url,
+                content=body if body else None,
+                cookies=request.cookies,
+                headers={"Content-Type": request.headers.get("content-type", "application/json")},
+            )
+    except httpx.HTTPError:
+        raise HTTPException(status_code=502, detail="Auth service unavailable")
+
+    content = response.json() if response.content else None
+    return JSONResponse(status_code=response.status_code, content=content)
+
+
 @router.post("/logout")
 async def logout(request: Request) -> JSONResponse:
     url = f"{settings.auth_service_url}/auth/logout"
