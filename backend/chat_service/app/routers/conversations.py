@@ -64,17 +64,33 @@ def _get_listing_seller_id(listing_id: uuid.UUID) -> uuid.UUID:
         )
 
 
-def _get_listing_title(listing_id: uuid.UUID) -> str | None:
-    url = f"{settings.listing_service_url}/listings/{listing_id}"
+def _get_listing_titles(listing_ids: Sequence[uuid.UUID]) -> dict[uuid.UUID, str]:
+    unique_ids = list(dict.fromkeys(listing_ids))
+    if not unique_ids:
+        return {}
+    url = f"{settings.listing_service_url}/listings"
+    params = [("ids", str(listing_id)) for listing_id in unique_ids]
     try:
         with httpx.Client(timeout=10) as client:
-            response = client.get(url)
+            response = client.get(url, params=params)
     except httpx.HTTPError:
-        return None
+        return {}
     if response.status_code != status.HTTP_200_OK:
-        return None
-    title = response.json().get("title")
-    return str(title) if title else None
+        return {}
+    try:
+        listings = response.json()
+    except ValueError:
+        return {}
+    titles: dict[uuid.UUID, str] = {}
+    for item in listings:
+        try:
+            listing_id = uuid.UUID(str(item["id"]))
+        except (KeyError, TypeError, ValueError):
+            continue
+        title = item.get("title")
+        if title:
+            titles[listing_id] = str(title)
+    return titles
 
 
 def _find_conversation(db: Session, listing_id: uuid.UUID, buyer_id: uuid.UUID) -> Conversation | None:
@@ -179,11 +195,13 @@ def list_conversations(
 
     last_messages = _last_messages(db, conversation_ids)
     unread_counts = _unread_counts(db, conversation_ids, user_id)
+    listing_ids = [conversation.listing_id for conversation in conversations]
+    listing_titles = _get_listing_titles(listing_ids)
     return [
         ConversationListItem(
             id=conversation.id,
             listing_id=conversation.listing_id,
-            listing_title=_get_listing_title(conversation.listing_id),
+            listing_title=listing_titles.get(conversation.listing_id),
             buyer_id=conversation.buyer_id,
             seller_id=conversation.seller_id,
             other_user=(

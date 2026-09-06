@@ -80,7 +80,7 @@ def send_message(
     db: Session = Depends(get_db),
 ) -> Message:
     user_id = _get_current_user_id(request)
-    _get_participant_conversation(db, conversation_id, user_id)
+    conversation = _get_participant_conversation(db, conversation_id, user_id)
 
     text = payload.text.strip()
     if not text:
@@ -89,6 +89,7 @@ def send_message(
             detail="Сообщение не может быть пустым",
         )
 
+    conversation.updated_at = datetime.now(timezone.utc)
     message = Message(
         conversation_id=conversation_id,
         sender_id=user_id,

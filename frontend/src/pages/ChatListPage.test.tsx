@@ -52,6 +52,10 @@ function listingRoutes(): MockRoutes {
 function baseRoutes(overrides: MockRoutes = {}): MockRoutes {
   return {
     ...authenticatedAuthRoutes(),
+    'GET /auth/users/user-buyer': {
+      status: 200,
+      body: { id: 'user-buyer', username: 'Покупатель' },
+    },
     ...overrides,
   }
 }
@@ -111,6 +115,36 @@ describe('ChatListPage', () => {
 
     const row = screen.getByRole('link', { name: /Велосипед/ })
     expect(row).toHaveAttribute('href', '/chat/conv-1')
+  })
+
+  it('renders the other participant username', async () => {
+    stubFetch(
+      baseRoutes({
+        'GET /chat/conversations': {
+          status: 200,
+          body: [conversation()],
+        },
+      }),
+    )
+    renderChatListPage()
+
+    expect(await screen.findByText('Покупатель')).toBeInTheDocument()
+    expect(screen.getByText('Велосипед')).toBeInTheDocument()
+  })
+
+  it('falls back to a generic label when the peer fetch fails', async () => {
+    stubFetch(
+      baseRoutes({
+        'GET /chat/conversations': {
+          status: 200,
+          body: [conversation()],
+        },
+        'GET /auth/users/user-buyer': { status: 500, body: { detail: 'boom' } },
+      }),
+    )
+    renderChatListPage()
+
+    expect(await screen.findByText('Собеседник')).toBeInTheDocument()
   })
 
   it('shows a photo placeholder when the listing has no image', async () => {

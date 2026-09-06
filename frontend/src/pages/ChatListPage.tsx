@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { chatsApi, type ConversationListItem } from '../api/chats'
 import { imageUrl, listingsApi } from '../api/listings'
+import { usersApi } from '../api/users'
 import MessagesLink from '../components/MessagesLink'
 
 function formatListTime(timestamp: string): string {
@@ -26,8 +27,15 @@ function ConversationRow({ conversation }: { conversation: ConversationListItem 
     enabled: Boolean(conversation.listing_id),
   })
 
+  const { data: otherUser } = useQuery({
+    queryKey: ['auth', 'users', conversation.other_user],
+    queryFn: () => usersApi.get(conversation.other_user),
+    enabled: Boolean(conversation.other_user),
+  })
+
   const photo = listing?.images?.[0]
-  const title = conversation.listing_title ?? 'Объявление'
+  const peerName = otherUser?.username ?? 'Собеседник'
+  const listingTitle = conversation.listing_title ?? 'Объявление'
   const hasUnread = (conversation.unread_count ?? 0) > 0
 
   return (
@@ -41,7 +49,7 @@ function ConversationRow({ conversation }: { conversation: ConversationListItem 
           <img
             className="chat-list__photo-img"
             src={imageUrl(photo.url)}
-            alt={title}
+            alt={listingTitle}
           />
         ) : (
           <span className="chat-list__photo-placeholder" aria-hidden="true">📷</span>
@@ -49,7 +57,8 @@ function ConversationRow({ conversation }: { conversation: ConversationListItem 
       </div>
 
       <div className="chat-list__body">
-        <span className="chat-list__title">{title}</span>
+        <span className="chat-list__peer">{peerName}</span>
+        <span className="chat-list__listing">{listingTitle}</span>
         <span className="chat-list__last">
           <span className="chat-list__subtitle">
             {conversation.last_message ?? 'Сообщений пока нет'}
