@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { apiClient, ApiError } from '../api/client'
 import { useAuth, type CurrentUser } from '../auth/AuthContext'
+import SiteFooter from '../components/SiteFooter'
 
 interface FieldErrors {
   username_or_email?: string
@@ -43,6 +44,25 @@ function EyeOffIcon() {
     >
       <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
       <line x1="1" y1="1" x2="23" y2="23" />
+    </svg>
+  )
+}
+
+function ShieldIcon() {
+  return (
+    <svg
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+      <polyline points="9 12 11 14 15 10" />
     </svg>
   )
 }
@@ -113,12 +133,16 @@ export default function LoginPage() {
     <div className="auth-page">
       <header className="auth-header">
         <Link className="auth-logo" to="/">
-          StudMarket
+          <span className="logo-mark" aria-hidden="true" />
+          Stud<span style={{ color: 'var(--green)' }}>Market</span>
         </Link>
       </header>
 
       <main className="auth-main">
         <form className="auth-form" onSubmit={handleSubmit} noValidate>
+          <div className="auth-icon">
+            <ShieldIcon />
+          </div>
           <h1 className="auth-title">Вход</h1>
 
           <label className="auth-field">
@@ -169,6 +193,7 @@ export default function LoginPage() {
           </p>
         </form>
       </main>
+      <SiteFooter />
     </div>
   )
 }

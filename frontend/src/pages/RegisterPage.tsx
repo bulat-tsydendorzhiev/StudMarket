@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { apiClient, ApiError } from '../api/client'
 import { useAuth, type CurrentUser } from '../auth/AuthContext'
+import SiteFooter from '../components/SiteFooter'
 
 interface FieldErrors {
   username?: string
@@ -47,6 +48,25 @@ function EyeOffIcon() {
     >
       <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
       <line x1="1" y1="1" x2="23" y2="23" />
+    </svg>
+  )
+}
+
+function GradCapIcon() {
+  return (
+    <svg
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M22 10v6M2 10l10-5 10 5-10 5z" />
+      <path d="M6 12v5c0 1.66 2.69 3 6 3s6-1.34 6-3v-5" />
     </svg>
   )
 }
@@ -146,12 +166,16 @@ export default function RegisterPage() {
     <div className="auth-page">
       <header className="auth-header">
         <Link className="auth-logo" to="/">
-          StudMarket
+          <span className="logo-mark" aria-hidden="true" />
+          Stud<span style={{ color: 'var(--green)' }}>Market</span>
         </Link>
       </header>
 
       <main className="auth-main">
         <form className="auth-form" onSubmit={handleSubmit} noValidate>
+          <div className="auth-icon">
+            <GradCapIcon />
+          </div>
           <h1 className="auth-title">Регистрация</h1>
 
           <label className="auth-field">
@@ -253,6 +277,7 @@ export default function RegisterPage() {
           </p>
         </form>
       </main>
+      <SiteFooter />
     </div>
   )
 }

@@ -1,9 +1,8 @@
 import { useQuery } from '@tanstack/react-query'
 import { Link, useSearchParams } from 'react-router-dom'
 import { imageUrl, listingsApi } from '../api/listings'
-import MessagesLink from '../components/MessagesLink'
-import SearchBar from '../components/SearchBar'
-import UserAvatar from '../components/UserAvatar'
+import SiteHeader from '../components/SiteHeader'
+import SiteFooter from '../components/SiteFooter'
 import { formatPrice } from './HomePage'
 
 const STATUS_LABELS: Record<string, string> = {
@@ -36,14 +35,11 @@ export default function MyListingsPage() {
 
   return (
     <div className="my-listings">
-      <header className="listing-page__header">
-        <Link className="listing-page__logo" to="/">
-          StudMarket
-        </Link>
-        <SearchBar searchBase="/my-listings" defaultValue={query} />
-        <MessagesLink />
-        <UserAvatar />
-      </header>
+      <SiteHeader
+        searchBase="/my-listings"
+        searchDefault={query}
+        showCreateCta={false}
+      />
 
       <main className="my-listings__main">
         <h1 className="my-listings__title">Мои объявления</h1>
@@ -58,6 +54,7 @@ export default function MyListingsPage() {
           <div className="my-listings__empty">
             <p className="my-listings__empty-text">У вас пока нет объявлений</p>
             <Link className="listing-detail__edit" to="/listings/new">
+              <span className="site-header__cta-plus" aria-hidden="true">+</span>
               Разместить объявление
             </Link>
           </div>
@@ -102,6 +99,7 @@ export default function MyListingsPage() {
           </div>
         )}
       </main>
+      <SiteFooter />
     </div>
   )
 }

@@ -5,9 +5,8 @@ import { chatsApi } from '../api/chats'
 import { listingsApi } from '../api/listings'
 import { useAuth } from '../auth/AuthContext'
 import ImageManager from '../components/ImageManager'
-import MessagesLink from '../components/MessagesLink'
-import SearchBar from '../components/SearchBar'
-import UserAvatar from '../components/UserAvatar'
+import SiteHeader from '../components/SiteHeader'
+import SiteFooter from '../components/SiteFooter'
 import { formatPrice } from './HomePage'
 
 function daysUntil(expiresAt: string | null): number | null {
@@ -52,117 +51,123 @@ export default function ListingDetailPage() {
   })
 
   if (isLoading) {
-    return <p className="listing-detail__status">Загрузка…</p>
+    return (
+      <>
+        <SiteHeader />
+        <p className="listing-detail__status">Загрузка…</p>
+      </>
+    )
   }
 
   if (isError || !listing) {
     return (
-      <div className="listing-detail">
-        <p className="listing-detail__status">Объявление не найдено</p>
-        <Link to="/">На главную</Link>
-      </div>
+      <>
+        <SiteHeader />
+        <div className="listing-detail">
+          <p className="listing-detail__status">Объявление не найдено</p>
+          <Link to="/">На главную</Link>
+        </div>
+      </>
     )
   }
 
   const isOwner = user?.id === listing.seller_id
   const isExpired = listing.status === 'EXPIRED'
   const daysLeft = daysUntil(listing.expires_at)
+  const isFree = listing.price === 0
 
   return (
     <div className="listing-detail">
-      <header className="listing-page__header">
-        <Link className="listing-page__logo" to="/">
-          StudMarket
-        </Link>
-        <SearchBar />
-        <MessagesLink />
-        <UserAvatar />
-      </header>
+      <SiteHeader />
 
       <main className="listing-detail__main">
-        <ImageManager
-          listingId={listing.id}
-          images={listing.images ?? []}
-          owner={isOwner}
-        />
+        <div className="listing-detail__grid">
+          <div>
+            <ImageManager
+              listingId={listing.id}
+              images={listing.images ?? []}
+              owner={isOwner}
+            />
 
-        <h1 className="listing-detail__title">{listing.title}</h1>
-        {isExpired && (
-          <div className="listing-detail__expired" role="status">
-            Объявление истекло
-          </div>
-        )}
-        <p className="listing-detail__price">{formatPrice(listing.price)}</p>
-        {!isExpired && daysLeft !== null && (
-          <p className="listing-detail__expiration" role="status">
-            {daysLeft > 0
-              ? `Осталось ${formatDays(daysLeft)}`
-              : 'Истекает сегодня'}
-          </p>
-        )}
-
-        {listing.tags.length > 0 && (
-          <div className="listing-detail__tags">
-            {listing.tags.map((tag) => (
-              <span className="listing-tag" key={tag}>
-                {tag}
-              </span>
-            ))}
-          </div>
-        )}
-
-        {listing.location && (
-          <div className="listing-detail__block">
-            <h2 className="listing-detail__heading">Локация</h2>
-            <span className="listing-tag">{listing.location}</span>
-          </div>
-        )}
-
-        <section className="listing-detail__block">
-          <h2 className="listing-detail__heading">Описание</h2>
-          <div className="listing-detail__description markdown">
-            <ReactMarkdown>{listing.description}</ReactMarkdown>
-          </div>
-        </section>
-
-        {isAuthenticated && !isOwner && !isExpired && (
-          <div className="listing-detail__actions">
-            <button
-              className="listing-detail__chat"
-              type="button"
-              onClick={() => chatMutation.mutate()}
-              disabled={chatMutation.isPending || chatMutation.isSuccess}
-            >
-              {chatMutation.isPending ? 'Отправка…' : 'Написать продавцу'}
-            </button>
-            {chatMutation.isSuccess && (
-              <p className="listing-detail__success">Чат с продавцом открыт</p>
+            <h1 className="listing-detail__title">{listing.title}</h1>
+            {isExpired && (
+              <div className="listing-detail__expired" role="status">
+                Объявление истекло
+              </div>
             )}
-            {chatMutation.isError && (
-              <p className="listing-detail__error">Не удалось начать чат</p>
+
+            {listing.tags.length > 0 && (
+              <div className="listing-detail__tags">
+                {listing.tags.map((tag) => (
+                  <span className="listing-tag" key={tag}>
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            )}
+
+            {listing.location && (
+              <div className="listing-detail__block">
+                <h2 className="listing-detail__heading">Локация</h2>
+                <span className="listing-tag">{listing.location}</span>
+              </div>
+            )}
+
+            <section className="listing-detail__block">
+              <h2 className="listing-detail__heading">Описание</h2>
+              <div className="listing-detail__description markdown">
+                <ReactMarkdown>{listing.description}</ReactMarkdown>
+              </div>
+            </section>
+
+            {isOwner && (
+              <div className="listing-detail__actions">
+                <Link className="listing-detail__edit" to={`/listings/${listing.id}/edit`}>
+                  Редактировать
+                </Link>
+                <button
+                  className="listing-detail__delete"
+                  type="button"
+                  onClick={() => deleteMutation.mutate()}
+                  disabled={deleteMutation.isPending}
+                >
+                  {deleteMutation.isPending ? 'Удаление…' : 'Удалить'}
+                </button>
+                {deleteMutation.isError && (
+                  <p className="listing-detail__error">Не удалось удалить объявление</p>
+                )}
+              </div>
             )}
           </div>
-        )}
 
-        {isOwner && (
-          <div className="listing-detail__actions">
-            <Link className="listing-detail__edit" to={`/listings/${listing.id}/edit`}>
-              Редактировать
-            </Link>
-            <button
-              className="listing-detail__delete"
-              type="button"
-              onClick={() => deleteMutation.mutate()}
-              disabled={deleteMutation.isPending}
-            >
-              {deleteMutation.isPending ? 'Удаление…' : 'Удалить'}
-            </button>
-            {deleteMutation.isError && (
-              <p className="listing-detail__error">Не удалось удалить объявление</p>
-            )}
+          <div className="listing-detail__sidebar">
+            <div className="listing-detail__info-card">
+              <p className={`listing-detail__price${isFree ? ' listing-detail__price--free' : ''}`}>
+                {formatPrice(listing.price)}
+              </p>
+              {!isExpired && daysLeft !== null && (
+                <p className="listing-detail__expiration" role="status">
+                  {daysLeft > 0
+                    ? `Осталось ${formatDays(daysLeft)}`
+                    : 'Истекает сегодня'}
+                </p>
+              )}
+              {isAuthenticated && !isOwner && !isExpired && (
+                <button
+                  className="listing-detail__chat"
+                  type="button"
+                  style={{ width: '100%', marginTop: 12 }}
+                  onClick={() => chatMutation.mutate()}
+                  disabled={chatMutation.isPending || chatMutation.isSuccess}
+                >
+                  {chatMutation.isPending ? 'Отправка…' : 'Написать продавцу'}
+                </button>
+              )}
+            </div>
           </div>
-        )}
+        </div>
       </main>
+      <SiteFooter />
     </div>
   )
 }

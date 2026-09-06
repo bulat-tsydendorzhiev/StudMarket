@@ -1,11 +1,10 @@
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import { listingsApi } from '../api/listings'
 import ImageManager from '../components/ImageManager'
 import ListingForm, { type ListingFormValues } from '../components/ListingForm'
-import MessagesLink from '../components/MessagesLink'
-import SearchBar from '../components/SearchBar'
-import UserAvatar from '../components/UserAvatar'
+import SiteHeader from '../components/SiteHeader'
+import SiteFooter from '../components/SiteFooter'
 
 export default function ListingEditPage() {
   const { id } = useParams<{ id: string }>()
@@ -31,19 +30,12 @@ export default function ListingEditPage() {
 
   return (
     <div className="listing-page">
-      <header className="listing-page__header">
-        <Link className="listing-page__logo" to="/">
-          StudMarket
-        </Link>
-        <SearchBar />
-        <MessagesLink />
-        <UserAvatar />
-      </header>
+      <SiteHeader />
 
       <main className="listing-page__main">
         <h1 className="listing-form__title">Редактирование объявления</h1>
-        {isLoading && <p>Загрузка…</p>}
-        {isError && <p>Не удалось загрузить объявление</p>}
+        {isLoading && <p style={{ color: 'var(--text-muted)' }}>Загрузка…</p>}
+        {isError && <p style={{ color: 'var(--error-text)' }}>Не удалось загрузить объявление</p>}
         {listing && (
           <ListingForm
             initialValues={{
@@ -74,6 +66,7 @@ export default function ListingEditPage() {
           </section>
         )}
       </main>
+      <SiteFooter />
     </div>
   )
 }

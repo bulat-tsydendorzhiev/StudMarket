@@ -14,6 +14,7 @@ import MyListingsPage from './pages/MyListingsPage'
 import NotFoundPage from './pages/NotFoundPage'
 import ProfilePage from './pages/ProfilePage'
 import RegisterPage from './pages/RegisterPage'
+import AboutPage from './pages/AboutPage'
 
 export default function App() {
   return (
@@ -78,6 +79,7 @@ export default function App() {
               </RequireAuth>
             }
           />
+          <Route path="/about" element={<AboutPage />} />
           <Route
             path="/login"
             element={

@@ -1,19 +1,11 @@
 import { Link } from 'react-router-dom'
-import MessagesLink from '../components/MessagesLink'
-import SearchBar from '../components/SearchBar'
-import UserAvatar from '../components/UserAvatar'
+import SiteHeader from '../components/SiteHeader'
+import SiteFooter from '../components/SiteFooter'
 
 export default function ListingPaymentPage() {
   return (
     <div className="payment">
-      <header className="payment__header">
-        <Link className="payment__logo" to="/">
-          StudMarket
-        </Link>
-        <SearchBar />
-        <MessagesLink />
-        <UserAvatar />
-      </header>
+      <SiteHeader />
 
       <main className="payment__main">
         <div className="payment__card">
@@ -33,6 +25,7 @@ export default function ListingPaymentPage() {
           </Link>
         </div>
       </main>
+      <SiteFooter />
     </div>
   )
 }

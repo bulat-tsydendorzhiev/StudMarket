@@ -1,15 +1,14 @@
 import { useMutation } from '@tanstack/react-query'
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { listingsApi } from '../api/listings'
 import ListingForm, {
   PAID_EXPIRATION_DAYS,
   type ListingFormValues,
 } from '../components/ListingForm'
-import MessagesLink from '../components/MessagesLink'
 import PhotoPicker from '../components/PhotoPicker'
-import SearchBar from '../components/SearchBar'
-import UserAvatar from '../components/UserAvatar'
+import SiteHeader from '../components/SiteHeader'
+import SiteFooter from '../components/SiteFooter'
 
 export default function ListingNewPage() {
   const navigate = useNavigate()
@@ -35,14 +34,7 @@ export default function ListingNewPage() {
 
   return (
     <div className="listing-page">
-      <header className="listing-page__header">
-        <Link className="listing-page__logo" to="/">
-          StudMarket
-        </Link>
-        <SearchBar />
-        <MessagesLink />
-        <UserAvatar />
-      </header>
+      <SiteHeader />
 
       <main className="listing-page__main">
         <h1 className="listing-form__title">Новое объявление</h1>
@@ -65,6 +57,7 @@ export default function ListingNewPage() {
           <PhotoPicker files={photos} onChange={setPhotos} />
         </section>
       </main>
+      <SiteFooter />
     </div>
   )
 }

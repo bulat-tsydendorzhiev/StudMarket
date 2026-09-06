@@ -1,11 +1,10 @@
 import { useState, type FormEvent } from 'react'
-import { Link } from 'react-router-dom'
 import { ApiError } from '../api/client'
 import { profileApi, type ProfileUpdate } from '../api/auth'
 import { useAuth, type CurrentUser } from '../auth/AuthContext'
-import MessagesLink from '../components/MessagesLink'
-import SearchBar from '../components/SearchBar'
-import UserAvatar, {
+import SiteHeader from '../components/SiteHeader'
+import SiteFooter from '../components/SiteFooter'
+import {
   avatarSrc,
   AVATAR_PRESETS,
 } from '../components/UserAvatar'
@@ -123,14 +122,7 @@ function ProfileForm({ user }: { user: CurrentUser }) {
 
   return (
     <div className="profile">
-      <header className="listing-page__header">
-        <Link className="listing-page__logo" to="/">
-          StudMarket
-        </Link>
-        <SearchBar />
-        <MessagesLink />
-        <UserAvatar />
-      </header>
+      <SiteHeader hideSearch />
 
       <main className="profile__main">
         <h1 className="profile__title">Профиль</h1>
@@ -140,8 +132,8 @@ function ProfileForm({ user }: { user: CurrentUser }) {
             className="profile__avatar"
             src={avatarSrc(user.avatar_path)}
             alt="Аватар"
-            width={96}
-            height={96}
+            width={80}
+            height={80}
           />
           <div className="profile__meta">
             <span className="profile__username">{user.username}</span>
@@ -179,36 +171,6 @@ function ProfileForm({ user }: { user: CurrentUser }) {
               <span className="listing-form__error">{fieldErrors.email}</span>
             )}
           </label>
-
-          <fieldset className="listing-form__field profile-avatar-picker">
-            <legend>Аватар</legend>
-            <div className="profile-avatar-picker__grid">
-              {AVATAR_PRESETS.map((preset) => (
-                <label
-                  className={
-                    selectedAvatar === preset.path
-                      ? 'profile-avatar-picker__option profile-avatar-picker__option--active'
-                      : 'profile-avatar-picker__option'
-                  }
-                  key={preset.path}
-                >
-                  <input
-                    type="radio"
-                    name="avatar"
-                    value={preset.path}
-                    checked={selectedAvatar === preset.path}
-                    onChange={() => setSelectedAvatar(preset.path)}
-                  />
-                  <img src={preset.path} alt={preset.name} />
-                </label>
-              ))}
-            </div>
-            {fieldErrors.avatar_path && (
-              <span className="listing-form__error">
-                {fieldErrors.avatar_path}
-              </span>
-            )}
-          </fieldset>
 
           <fieldset className="listing-form__field profile-password">
             <legend>Смена пароля</legend>
@@ -249,6 +211,36 @@ function ProfileForm({ user }: { user: CurrentUser }) {
             </label>
           </fieldset>
 
+          <fieldset className="listing-form__field profile-avatar-picker">
+            <legend>Аватар</legend>
+            <div className="profile-avatar-picker__grid">
+              {AVATAR_PRESETS.map((preset) => (
+                <label
+                  className={
+                    selectedAvatar === preset.path
+                      ? 'profile-avatar-picker__option profile-avatar-picker__option--active'
+                      : 'profile-avatar-picker__option'
+                  }
+                  key={preset.path}
+                >
+                  <input
+                    type="radio"
+                    name="avatar"
+                    value={preset.path}
+                    checked={selectedAvatar === preset.path}
+                    onChange={() => setSelectedAvatar(preset.path)}
+                  />
+                  <img src={preset.path} alt={preset.name} />
+                </label>
+              ))}
+            </div>
+            {fieldErrors.avatar_path && (
+              <span className="listing-form__error">
+                {fieldErrors.avatar_path}
+              </span>
+            )}
+          </fieldset>
+
           {formError && <p className="listing-form__server-error">{formError}</p>}
           {success && (
             <p className="listing-form__success" role="status">
@@ -265,6 +257,7 @@ function ProfileForm({ user }: { user: CurrentUser }) {
           </button>
         </form>
       </main>
+      <SiteFooter />
     </div>
   )
 }

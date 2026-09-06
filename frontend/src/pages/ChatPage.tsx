@@ -4,9 +4,9 @@ import { Link, useParams } from 'react-router-dom'
 import { chatsApi, type Message } from '../api/chats'
 import { usersApi } from '../api/users'
 import { useAuth } from '../auth/AuthContext'
-import MessagesLink from '../components/MessagesLink'
-import SearchBar from '../components/SearchBar'
-import UserAvatar, { avatarSrc } from '../components/UserAvatar'
+import SiteHeader from '../components/SiteHeader'
+import SiteFooter from '../components/SiteFooter'
+import { avatarSrc } from '../components/UserAvatar'
 
 const POLL_INTERVAL_MS = 3000
 
@@ -146,18 +146,11 @@ export default function ChatPage() {
 
   return (
     <div className="chat">
-      <header className="listing-page__header">
-        <Link className="listing-page__logo" to="/">
-          StudMarket
-        </Link>
-        <SearchBar />
-        <MessagesLink />
-        <UserAvatar />
-      </header>
+      <SiteHeader />
 
       <main className="chat__main">
         <Link className="chat__back" to="/chat">
-          ← Назад
+          ← Назад к чатам
         </Link>
 
         {otherUser && (
@@ -216,6 +209,7 @@ export default function ChatPage() {
           </>
         )}
       </main>
+      <SiteFooter />
     </div>
   )
 }
