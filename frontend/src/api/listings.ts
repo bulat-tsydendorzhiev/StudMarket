@@ -22,6 +22,15 @@ export interface Listing {
   expires_at: string | null
   location: string | null
   tags: string[]
+  images: ListingImage[]
+}
+
+export interface ListingImage {
+  id: string
+  listing_id: string
+  position: number
+  created_at: string
+  url: string
 }
 
 export interface ListingInput {
@@ -66,4 +75,19 @@ export const listingsApi = {
   update: (id: string, input: ListingInput) =>
     apiClient.patch<Listing>(`/listings/${id}`, input),
   remove: (id: string) => apiClient.delete<void>(`/listings/${id}`),
+  uploadImages: (id: string, files: File[]) => {
+    const formData = new FormData()
+    for (const file of files) {
+      formData.append('files', file)
+    }
+    return apiClient.post<ListingImage[]>(`/listings/${id}/images`, undefined, {
+      body: formData,
+    })
+  },
+  deleteImage: (listingId: string, imageId: string) =>
+    apiClient.delete<void>(`/listings/${listingId}/images/${imageId}`),
+}
+
+export function imageUrl(url: string): string {
+  return `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}${url}`
 }

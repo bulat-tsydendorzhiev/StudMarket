@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { fireEvent, screen } from '@testing-library/react'
+import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { Route, Routes } from 'react-router-dom'
 import ListingDetailPage from './ListingDetailPage'
 import ChatPage from './ChatPage'
@@ -7,6 +7,7 @@ import {
   authenticatedAuthRoutes,
   currentUser,
   guestAuthRoutes,
+  makeImage,
   makeListing,
   renderWithProviders,
   stubFetch,
@@ -263,5 +264,118 @@ describe('ListingDetailPage', () => {
     expect(
       screen.queryByRole('button', { name: 'Написать продавцу' }),
     ).not.toBeInTheDocument()
+  })
+
+  it('shows photos waiting message when there are no images', async () => {
+    stubFetch({
+      ...guestAuthRoutes(),
+      'GET /listings/listing-1': { status: 200, body: makeListing() },
+    })
+    renderDetailPage()
+
+    expect(
+      await screen.findByText('Фото скоро появится'),
+    ).toBeInTheDocument()
+  })
+
+  it('displays images and the first image as primary', async () => {
+    stubFetch({
+      ...guestAuthRoutes(),
+      'GET /listings/listing-1': {
+        status: 200,
+        body: makeListing({
+          images: [makeImage({ id: 'img-1' }), makeImage({ id: 'img-2', position: 1 })],
+        }),
+      },
+    })
+    renderDetailPage()
+
+    expect(
+      await screen.findByAltText('Фото объявления'),
+    ).toBeInTheDocument()
+    expect(screen.getAllByAltText('Миниатюра фото')).toHaveLength(2)
+  })
+
+  it('does not show image controls to non-owners', async () => {
+    stubFetch({
+      ...guestAuthRoutes(),
+      'GET /listings/listing-1': {
+        status: 200,
+        body: makeListing({
+          seller_id: 'some-other-user',
+          images: [makeImage()],
+        }),
+      },
+    })
+    renderDetailPage()
+
+    expect(
+      await screen.findByAltText('Фото объявления'),
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Добавить фотографии' }),
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Добавить фото' }),
+    ).not.toBeInTheDocument()
+  })
+
+  it('allows the owner to add photos', async () => {
+    const fetchMock = stubFetch({
+      ...authenticatedAuthRoutes(),
+      'GET /listings/listing-1': { status: 200, body: makeListing() },
+      'POST /listings/listing-1/images': {
+        status: 201,
+        body: [makeImage()],
+      },
+    })
+    renderDetailPage()
+
+    const addButton = await screen.findByRole('button', {
+      name: 'Добавить фотографии',
+    })
+    const fileInput = addButton.parentElement?.querySelector(
+      'input[type=file]',
+    )
+    fireEvent.change(fileInput!, {
+      target: { files: [new File(['fake-jpeg'], 'photo.jpg', { type: 'image/jpeg' })] },
+    })
+
+    await waitFor(() => {
+      expect(
+        fetchMock.mock.calls.some(
+          ([input, init]) =>
+            String(input).endsWith('/listings/listing-1/images') &&
+            (init?.method ?? 'GET') === 'POST',
+        ),
+      ).toBe(true)
+    })
+  })
+
+  it('allows the owner to remove an image', async () => {
+    const fetchMock = stubFetch({
+      ...authenticatedAuthRoutes(),
+      'GET /listings/listing-1': {
+        status: 200,
+        body: makeListing({ images: [makeImage()] }),
+      },
+      'DELETE /listings/listing-1/images/image-1': { status: 204 },
+    })
+    renderDetailPage()
+
+    const deleteButton = await screen.findByRole('button', {
+      name: 'Удалить фото',
+    })
+    fireEvent.click(deleteButton)
+
+    await waitFor(() => {
+      expect(
+        fetchMock.mock.calls.some(
+          ([input, init]) =>
+            String(input).endsWith('/listings/listing-1/images/image-1') &&
+            (init?.method ?? 'GET') === 'DELETE',
+        ),
+      ).toBe(true)
+    })
   })
 })

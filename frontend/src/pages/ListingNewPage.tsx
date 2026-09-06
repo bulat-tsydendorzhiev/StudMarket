@@ -1,20 +1,28 @@
 import { useMutation } from '@tanstack/react-query'
+import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { listingsApi } from '../api/listings'
 import ListingForm, { type ListingFormValues } from '../components/ListingForm'
+import PhotoPicker from '../components/PhotoPicker'
 
 export default function ListingNewPage() {
   const navigate = useNavigate()
+  const [photos, setPhotos] = useState<File[]>([])
 
   const mutation = useMutation({
-    mutationFn: (values: ListingFormValues) =>
-      listingsApi.create({
+    mutationFn: async (values: ListingFormValues) => {
+      const listing = await listingsApi.create({
         title: values.title,
         description: values.description,
         price: values.price,
         tags: values.tags,
         location: values.location,
-      }),
+      })
+      if (photos.length > 0) {
+        await listingsApi.uploadImages(listing.id, photos)
+      }
+      return listing
+    },
     onSuccess: (listing) => navigate(`/listings/${listing.id}`),
   })
 
@@ -35,6 +43,11 @@ export default function ListingNewPage() {
           error={mutation.isError ? 'Не удалось создать объявление' : ''}
           onSubmit={(values) => mutation.mutate(values)}
         />
+
+        <section className="listing-form__images">
+          <h2 className="listing-form__image-title">Фотографии (необязательно)</h2>
+          <PhotoPicker files={photos} onChange={setPhotos} />
+        </section>
       </main>
     </div>
   )

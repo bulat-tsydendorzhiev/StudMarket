@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { fireEvent, screen } from '@testing-library/react'
+import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { Route, Routes } from 'react-router-dom'
 import ListingEditPage from './ListingEditPage'
 import ListingNewPage from './ListingNewPage'
@@ -7,6 +7,7 @@ import {
   authenticatedAuthRoutes,
   guestAuthRoutes,
   locationsRoutes,
+  makeImage,
   makeListing,
   renderWithProviders,
   stubFetch,
@@ -221,6 +222,51 @@ describe('ListingNewPage', () => {
       location: 'Общежитие №3',
     })
   })
+
+  it('uploads selected photos after creating the listing', async () => {
+    const originalCreateObjectURL = URL.createObjectURL
+    const originalRevokeObjectURL = URL.revokeObjectURL
+    URL.createObjectURL = vi.fn(() => 'blob:mock-url')
+    URL.revokeObjectURL = vi.fn()
+
+    try {
+      const fetchMock = stubFetch({
+        ...guestAuthRoutes(),
+        'POST /listings': {
+          status: 201,
+          body: makeListing({ id: 'listing-new' }),
+        },
+        'POST /listings/listing-new/images': {
+          status: 201,
+          body: [makeImage({ id: 'image-new', listing_id: 'listing-new' })],
+        },
+      })
+      renderNewPage()
+
+      fillForm()
+      fireEvent.click(screen.getByRole('button', { name: 'Добавить фото' }))
+      const fileInput = document.querySelector('input[type=file]')
+      fireEvent.change(fileInput!, {
+        target: {
+          files: [new File(['fake-jpeg'], 'photo.jpg', { type: 'image/jpeg' })],
+        },
+      })
+      fireEvent.click(screen.getByRole('button', { name: 'Создать объявление' }))
+
+      expect(await screen.findByText('Listing Page')).toBeInTheDocument()
+
+      const imageCall = fetchMock.mock.calls.find(
+        ([input, init]) =>
+          String(input).endsWith('/listings/listing-new/images') &&
+          (init?.method ?? 'GET') === 'POST',
+      )
+      expect(imageCall).toBeTruthy()
+      expect(imageCall?.[1]?.body).toBeInstanceOf(FormData)
+    } finally {
+      URL.createObjectURL = originalCreateObjectURL
+      URL.revokeObjectURL = originalRevokeObjectURL
+    }
+  })
 })
 
 describe('ListingEditPage', () => {
@@ -307,5 +353,56 @@ describe('ListingEditPage', () => {
     renderEditPage()
 
     expect(await screen.findByText('Не удалось загрузить объявление')).toBeInTheDocument()
+  })
+
+  it('renders the photos manager on the edit page', async () => {
+    stubFetch({
+      ...authenticatedAuthRoutes(),
+      'GET /listings/listing-1': {
+        status: 200,
+        body: makeListing({ images: [makeImage()] }),
+      },
+    })
+    renderEditPage()
+
+    expect(
+      await screen.findByRole('heading', { name: 'Фотографии' }),
+    ).toBeInTheDocument()
+    expect(await screen.findByAltText('Фото объявления')).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Удалить фото' }),
+    ).toBeInTheDocument()
+  })
+
+  it('allows uploading photos from the edit page', async () => {
+    const fetchMock = stubFetch({
+      ...authenticatedAuthRoutes(),
+      'GET /listings/listing-1': { status: 200, body: makeListing() },
+      'POST /listings/listing-1/images': { status: 201, body: [makeImage()] },
+    })
+    renderEditPage()
+
+    await screen.findByRole('heading', { name: 'Редактирование объявления' })
+    const addButton = await screen.findByRole('button', {
+      name: 'Добавить фотографии',
+    })
+    const fileInput = addButton.parentElement?.querySelector(
+      'input[type=file]',
+    )
+    fireEvent.change(fileInput!, {
+      target: {
+        files: [new File(['fake-jpeg'], 'photo.jpg', { type: 'image/jpeg' })],
+      },
+    })
+
+    await waitFor(() => {
+      expect(
+        fetchMock.mock.calls.some(
+          ([input, init]) =>
+            String(input).endsWith('/listings/listing-1/images') &&
+            (init?.method ?? 'GET') === 'POST',
+        ),
+      ).toBe(true)
+    })
   })
 })

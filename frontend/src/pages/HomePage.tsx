@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
+  imageUrl,
   locationsApi,
   listingsApi,
   tagsApi,
@@ -180,7 +181,17 @@ export default function HomePage() {
                     key={listing.id}
                     to={`/listings/${listing.id}`}
                   >
-                    <div className="listing-card__photo">Фото скоро появится</div>
+                    <div className="listing-card__photo">
+                      {(listing.images ?? []).length > 0 ? (
+                        <img
+                          className="listing-card__img"
+                          src={imageUrl(listing.images[0].url)}
+                          alt={listing.title}
+                        />
+                      ) : (
+                        'Фото скоро появится'
+                      )}
+                    </div>
                     <div className="listing-card__body">
                       <span className="listing-card__price">
                         {formatPrice(listing.price)}
