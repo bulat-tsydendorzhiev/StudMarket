@@ -382,10 +382,10 @@ describe('App', () => {
       target: { value: 'alice@example.com' },
     })
     fireEvent.change(screen.getByLabelText('Пароль'), {
-      target: { value: 'secret123' },
+      target: { value: 'Secret123' },
     })
     fireEvent.change(screen.getByLabelText('Подтверждение пароля'), {
-      target: { value: 'secret123' },
+      target: { value: 'Secret123' },
     })
     fireEvent.click(screen.getByRole('button', { name: 'Создать аккаунт' }))
 

@@ -14,14 +14,14 @@ def _register_and_login(client: TestClient, username: str = "alice") -> None:
         json={
             "username": username,
             "email": f"{username}@example.com",
-            "password": "secret123",
-            "password_confirmation": "secret123",
+            "password": "Secret123",
+            "password_confirmation": "Secret123",
         },
     )
     assert response.status_code == 201
     response = client.post(
         "/auth/login",
-        json={"username_or_email": username, "password": "secret123"},
+        json={"username_or_email": username, "password": "Secret123"},
     )
     assert response.status_code == 200
 

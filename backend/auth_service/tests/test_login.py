@@ -13,8 +13,8 @@ def _register(client: TestClient, username: str = "alice", email: str = "alice@e
         json={
             "username": username,
             "email": email,
-            "password": "secret123",
-            "password_confirmation": "secret123",
+            "password": "Secret123",
+            "password_confirmation": "Secret123",
         },
     )
     assert response.status_code == 201
@@ -25,7 +25,7 @@ def test_login_succeeds_with_username(client) -> None:
 
     response = client.post(
         "/auth/login",
-        json={"username_or_email": "alice", "password": "secret123"},
+        json={"username_or_email": "alice", "password": "Secret123"},
     )
 
     assert response.status_code == 200
@@ -40,7 +40,7 @@ def test_login_succeeds_with_email(client) -> None:
 
     response = client.post(
         "/auth/login",
-        json={"username_or_email": "alice@example.com", "password": "secret123"},
+        json={"username_or_email": "alice@example.com", "password": "Secret123"},
     )
 
     assert response.status_code == 200
@@ -53,7 +53,7 @@ def test_login_sets_http_only_cookie(client) -> None:
 
     response = client.post(
         "/auth/login",
-        json={"username_or_email": "alice", "password": "secret123"},
+        json={"username_or_email": "alice", "password": "Secret123"},
     )
 
     assert response.status_code == 200
@@ -70,7 +70,7 @@ def test_login_tokens_trace_back_to_user(client, db_session) -> None:
 
     response = client.post(
         "/auth/login",
-        json={"username_or_email": "alice", "password": "secret123"},
+        json={"username_or_email": "alice", "password": "Secret123"},
     )
     token = response.cookies.get("access_token")
     assert token is not None
@@ -100,7 +100,7 @@ def test_login_rejects_wrong_password(client) -> None:
 def test_login_rejects_unknown_user(client) -> None:
     response = client.post(
         "/auth/login",
-        json={"username_or_email": "nobody", "password": "secret123"},
+        json={"username_or_email": "nobody", "password": "Secret123"},
     )
 
     assert response.status_code == 401
@@ -115,7 +115,7 @@ def test_login_rejects_inactive_user(client, db_session) -> None:
 
     response = client.post(
         "/auth/login",
-        json={"username_or_email": "alice", "password": "secret123"},
+        json={"username_or_email": "alice", "password": "Secret123"},
     )
 
     assert response.status_code == 401
@@ -124,7 +124,7 @@ def test_login_rejects_inactive_user(client, db_session) -> None:
 def test_login_requires_username_or_email(client) -> None:
     response = client.post(
         "/auth/login",
-        json={"password": "secret123"},
+        json={"password": "Secret123"},
     )
 
     assert response.status_code == 422
