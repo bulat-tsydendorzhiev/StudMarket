@@ -88,40 +88,6 @@ export default function HomePage() {
     }
   }
 
-  const categories = (tags ?? []).sort((a: Tag, b: Tag) =>
-    a.name.localeCompare(b.name),
-  )
-
-  const cycleTag = (name: string) => {
-    const included = selectedTags.includes(name)
-    const excluded = excludedTags.includes(name)
-    if (included) {
-      setSelectedTags((prev) => prev.filter((tag) => tag !== name))
-      setExcludedTags((prev) => [...prev, name])
-    } else if (excluded) {
-      setExcludedTags((prev) => prev.filter((tag) => tag !== name))
-    } else {
-      setSelectedTags((prev) => [...prev, name])
-    }
-  }
-
-  const categories = (tags ?? []).sort((a: Tag, b: Tag) =>
-    a.name.localeCompare(b.name),
-  )
-
-  const cycleTag = (name: string) => {
-    const included = selectedTags.includes(name)
-    const excluded = excludedTags.includes(name)
-    if (included) {
-      setSelectedTags((prev) => prev.filter((tag) => tag !== name))
-      setExcludedTags((prev) => [...prev, name])
-    } else if (excluded) {
-      setExcludedTags((prev) => prev.filter((tag) => tag !== name))
-    } else {
-      setSelectedTags((prev) => [...prev, name])
-    }
-  }
-
   const toggleLocation = (name: string) => {
     setSelectedLocations((prev) =>
       prev.includes(name)

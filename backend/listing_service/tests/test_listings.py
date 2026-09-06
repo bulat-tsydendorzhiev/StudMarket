@@ -866,7 +866,7 @@ def test_filter_listings_combines_sort_and_tags(client: TestClient) -> None:
     _auth(client)
     client.post(
         "/listings",
-        json=_listing_payload(title="Ноутбук дорогой", price=1500.0, tags=["Электроника"]),
+        json=_listing_payload(title="Ноутбук дорогой", price=1500.0, tags=["Электроника", "Спорт"]),
     )
     client.post(
         "/listings",
@@ -882,8 +882,8 @@ def test_filter_listings_combines_sort_and_tags(client: TestClient) -> None:
     assert response.status_code == 200
     listings = response.json()
     titles = [listing["title"] for listing in listings]
-    # Should only include listings with either "Спорт" or "Электроника" tags, sorted by price
-    assert titles == ["Велосипед дешевый", "Ноутбук дорогой"]
+    # Should only include listings with BOTH "Спорт" AND "Электроника" tags (AND logic), sorted by price
+    assert titles == ["Ноутбук дорогой"]
 
 
 def test_filter_listings_combines_sort_and_location(client: TestClient) -> None:

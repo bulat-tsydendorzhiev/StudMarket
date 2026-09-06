@@ -19,6 +19,8 @@ describe('HomePage', () => {
   it('shows an empty state when there are no listings', async () => {
     stubFetch({
       ...authenticatedAuthRoutes(),
+      ...tagsRoutes(),
+      ...locationsRoutes(),
       'GET /listings': { status: 200, body: [] },
     })
     renderWithProviders(<HomePage />)
@@ -29,6 +31,8 @@ describe('HomePage', () => {
   it('renders listing cards with title and price', async () => {
     stubFetch({
       ...authenticatedAuthRoutes(),
+      ...tagsRoutes(),
+      ...locationsRoutes(),
       'GET /listings': {
         status: 200,
         body: [
@@ -50,6 +54,8 @@ describe('HomePage', () => {
   it('renders free listings as "Бесплатно"', async () => {
     stubFetch({
       ...authenticatedAuthRoutes(),
+      ...tagsRoutes(),
+      ...locationsRoutes(),
       'GET /listings': {
         status: 200,
         body: [makeListing({ id: 'listing-free', title: 'Отдам даром', price: 0 })],
@@ -64,6 +70,8 @@ describe('HomePage', () => {
   it('shows an error state when listings fail to load', async () => {
     stubFetch({
       ...authenticatedAuthRoutes(),
+      ...tagsRoutes(),
+      ...locationsRoutes(),
       'GET /listings': { status: 500, body: { detail: 'boom' } },
     })
     renderWithProviders(<HomePage />)
@@ -76,6 +84,8 @@ describe('HomePage', () => {
   it('displays the primary image on a listing card', async () => {
     stubFetch({
       ...authenticatedAuthRoutes(),
+      ...tagsRoutes(),
+      ...locationsRoutes(),
       'GET /listings': {
         status: 200,
         body: [
@@ -99,6 +109,8 @@ describe('HomePage', () => {
   it('shows a "Чаты" link for authenticated users', async () => {
     stubFetch({
       ...authenticatedAuthRoutes(),
+      ...tagsRoutes(),
+      ...locationsRoutes(),
       'GET /listings': { status: 200, body: [] },
     })
     renderWithProviders(<HomePage />)
@@ -124,12 +136,13 @@ describe('HomePage', () => {
     expect(screen.getByLabelText('Город')).toBeInTheDocument()
 
     const groups = document.querySelectorAll('.filters__group')
-    expect(groups.length).toBe(2)
+    expect(groups.length).toBe(3) // tags group, locations group, sort+button group
     expect(groups[0]).toContainElement(screen.getByLabelText('Электроника'))
     expect(groups[1]).toContainElement(screen.getByLabelText('Общежитие №2'))
+    expect(groups[2]).toContainElement(screen.getByText('Сортировка:'))
   })
 
-  it('filters listings when a tag is selected', async () => {
+  it('filters listings when tag is selected and "Показать" is clicked', async () => {
     const fetchMock = stubFetch({
       ...authenticatedAuthRoutes(),
       ...tagsRoutes(),
@@ -141,7 +154,7 @@ describe('HomePage', () => {
           makeListing({ id: 'listing-2', title: 'Учебник' }),
         ],
       },
-      'GET /listings?tags=Электроника': {
+      'GET /listings?tags=%D0%AD%D0%BB%D0%B5%D0%BA%D1%82%D1%80%D0%BE%D0%BD%D0%B8%D0%BA%D0%B0': {
         status: 200,
         body: [makeListing({ id: 'listing-1', title: 'Ноутбук' })],
       },
@@ -151,6 +164,7 @@ describe('HomePage', () => {
     expect(await screen.findByText('Велосипед')).toBeInTheDocument()
 
     fireEvent.click(screen.getByLabelText('Электроника'))
+    fireEvent.click(screen.getByRole('button', { name: 'Показать' }))
 
     expect(await screen.findByText('Ноутбук')).toBeInTheDocument()
     expect(screen.queryByText('Велосипед')).not.toBeInTheDocument()
@@ -161,7 +175,7 @@ describe('HomePage', () => {
     expect(taggedCall).toBeTruthy()
   })
 
-  it('filters listings when a location is selected', async () => {
+  it('filters listings when a location is selected and "Показать" is clicked', async () => {
     const fetchMock = stubFetch({
       ...authenticatedAuthRoutes(),
       ...tagsRoutes(),
@@ -173,7 +187,7 @@ describe('HomePage', () => {
           makeListing({ id: 'listing-2', title: 'Учебник' }),
         ],
       },
-      'GET /listings?location=Общежитие%20№3': {
+      'GET /listings?location=%D0%9E%D0%B1%D1%89%D0%B5%D0%B6%D0%B8%D1%82%D0%B8%D0%B5%20%E2%84%963': {
         status: 200,
         body: [makeListing({ id: 'listing-1', title: 'Телефон' })],
       },
@@ -183,6 +197,7 @@ describe('HomePage', () => {
     expect(await screen.findByText('Велосипед')).toBeInTheDocument()
 
     fireEvent.click(screen.getByLabelText('Общежитие №3'))
+    fireEvent.click(screen.getByRole('button', { name: 'Показать' }))
 
     expect(await screen.findByText('Телефон')).toBeInTheDocument()
     const calls = fetchMock.mock.calls.filter(([input, init]) =>
@@ -201,11 +216,11 @@ describe('HomePage', () => {
         status: 200,
         body: [makeListing({ id: 'listing-1', title: 'Велосипед' })],
       },
-      'GET /listings?tags=Электроника': {
+      'GET /listings?tags=%D0%AD%D0%BB%D0%B5%D0%BA%D1%82%D1%80%D0%BE%D0%BD%D0%B8%D0%BA%D0%B0': {
         status: 200,
         body: [makeListing({ id: 'listing-1', title: 'Ноутбук' })],
       },
-      'GET /listings?exclude_tags=Электроника': {
+      'GET /listings?exclude_tags=%D0%AD%D0%BB%D0%B5%D0%BA%D1%82%D1%80%D0%BE%D0%BD%D0%B8%D0%BA%D0%B0': {
         status: 200,
         body: [makeListing({ id: 'listing-2', title: 'Учебник' })],
       },
@@ -216,10 +231,12 @@ describe('HomePage', () => {
 
     const checkbox = screen.getByLabelText('Электроника')
     fireEvent.click(checkbox)
+    fireEvent.click(screen.getByRole('button', { name: 'Показать' }))
     expect(await screen.findByText('Ноутбук')).toBeInTheDocument()
     expect(checkbox).not.toHaveClass('filters__checkbox--excluded')
 
     fireEvent.click(checkbox)
+    fireEvent.click(screen.getByRole('button', { name: 'Показать' }))
     expect(await screen.findByText('Учебник')).toBeInTheDocument()
     expect(screen.queryByText('Велосипед')).not.toBeInTheDocument()
     expect(checkbox).toHaveClass('filters__checkbox--excluded')
@@ -240,11 +257,11 @@ describe('HomePage', () => {
         status: 200,
         body: [makeListing({ id: 'listing-1', title: 'Велосипед' })],
       },
-      'GET /listings?tags=Электроника': {
+      'GET /listings?tags=%D0%AD%D0%BB%D0%B5%D0%BA%D1%82%D1%80%D0%BE%D0%BD%D0%B8%D0%BA%D0%B0': {
         status: 200,
         body: [makeListing({ id: 'listing-1', title: 'Ноутбук' })],
       },
-      'GET /listings?exclude_tags=Электроника': {
+      'GET /listings?exclude_tags=%D0%AD%D0%BB%D0%B5%D0%BA%D1%82%D1%80%D0%BE%D0%BD%D0%B8%D0%BA%D0%B0': {
         status: 200,
         body: [makeListing({ id: 'listing-2', title: 'Учебник' })],
       },
@@ -253,13 +270,16 @@ describe('HomePage', () => {
 
     const checkbox = await screen.findByLabelText('Электроника')
     fireEvent.click(checkbox)
+    fireEvent.click(screen.getByRole('button', { name: 'Показать' }))
     expect(await screen.findByText('Ноутбук')).toBeInTheDocument()
 
     fireEvent.click(checkbox)
+    fireEvent.click(screen.getByRole('button', { name: 'Показать' }))
     expect(await screen.findByText('Учебник')).toBeInTheDocument()
     expect(checkbox).toHaveClass('filters__checkbox--excluded')
 
     fireEvent.click(checkbox)
+    fireEvent.click(screen.getByRole('button', { name: 'Показать' }))
     expect(await screen.findByText('Велосипед')).toBeInTheDocument()
     expect(checkbox).not.toHaveClass('filters__checkbox--excluded')
 
@@ -271,10 +291,32 @@ describe('HomePage', () => {
     expect(lastUrl).not.toContain('exclude_tags=')
   })
 
+  it('shows sorting dropdown with correct options', async () => {
+    stubFetch({
+      ...authenticatedAuthRoutes(),
+      ...tagsRoutes(),
+      ...locationsRoutes(),
+      'GET /listings': { status: 200, body: [] },
+    })
+    renderWithProviders(<HomePage />)
+
+    const select = screen.getByRole('combobox')
+    expect(select).toBeInTheDocument()
+    expect(select).toHaveValue('newest')
+
+    fireEvent.change(select, { target: { value: 'cheapest' } })
+    expect(select).toHaveValue('cheapest')
+
+    fireEvent.change(select, { target: { value: 'most_expensive' } })
+    expect(select).toHaveValue('most_expensive')
+  })
+
   it('pre-fills the search bar from the URL query', async () => {
     stubFetch({
       ...authenticatedAuthRoutes(),
-      'GET /listings?q=велосипед': {
+      ...tagsRoutes(),
+      ...locationsRoutes(),
+      'GET /listings?q=%D0%B2%D0%B5%D0%BB%D0%BE%D1%81%D0%B8%D0%BF%D0%B5%D0%B4': {
         status: 200,
         body: [makeListing({ id: 'listing-1', title: 'Велосипед' })],
       },
@@ -289,14 +331,16 @@ describe('HomePage', () => {
   it('sends the URL query to the listings API', async () => {
     const fetchMock = stubFetch({
       ...authenticatedAuthRoutes(),
-      'GET /listings?q=велосипед': {
+      ...tagsRoutes(),
+      ...locationsRoutes(),
+      'GET /listings?q=%D0%B2%D0%B5%D0%BB%D0%BE%D1%81%D0%B8%D0%BF%D0%B5%D0%B4': {
         status: 200,
         body: [makeListing({ id: 'listing-1', title: 'Велосипед' })],
       },
     })
     renderWithProviders(<HomePage />, ['/?q=велосипед'])
 
-    expect(await screen.findByText('Велосипед')).toBeInTheDocument()
+    await screen.findByText('Велосипед')
     const calls = fetchMock.mock.calls.filter(([input, init]) =>
       String(input).includes('/listings') && (init?.method ?? 'GET') === 'GET',
     )
