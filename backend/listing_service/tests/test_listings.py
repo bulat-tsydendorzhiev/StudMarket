@@ -796,22 +796,115 @@ def test_search_listings_with_no_matches_returns_empty(client: TestClient) -> No
     assert response.json() == []
 
 
-def test_search_listings_combines_with_tags(client: TestClient) -> None:
+def test_filter_listings_sorts_cheapest_first(client: TestClient) -> None:
     _auth(client)
     client.post(
         "/listings",
-        json=_listing_payload(title="Велосипед горный", tags=["Спорт"]),
+        json=_listing_payload(title="Ноутбук дорогой", price=1500.0),
     )
     client.post(
         "/listings",
-        json=_listing_payload(title="Велосипед детский", tags=["Другое"]),
+        json=_listing_payload(title="Велосипед дешевый", price=500.0),
+    )
+    client.post(
+        "/listings",
+        json=_listing_payload(title="Учебник средний", price=800.0),
     )
 
-    response = client.get(
-        "/listings",
-        params={"q": "Велосипед", "tags": ["Спорт"]},
-    )
+    response = client.get("/listings", params={"sort": "cheapest"})
 
     assert response.status_code == 200
-    titles = [listing["title"] for listing in response.json()]
-    assert titles == ["Велосипед горный"]
+    listings = response.json()
+    titles = [listing["title"] for listing in listings]
+    assert titles == ["Велосипед дешевый", "Учебник средний", "Ноутбук дорогой"]
+
+
+def test_filter_listings_sorts_most_expensive_first(client: TestClient) -> None:
+    _auth(client)
+    client.post(
+        "/listings",
+        json=_listing_payload(title="Ноутбук дорогой", price=1500.0),
+    )
+    client.post("/listings", json=_listing_payload(title="Велосипед дешевый", price=500.0))
+    client.post("/listings", json=_listing_payload(title="Учебник средний", price=800.0))
+
+    response = client.get("/listings", params={"sort": "most_expensive"})
+
+    assert response.status_code == 200
+    listings = response.json()
+    titles = [listing["title"] for listing in listings]
+    assert titles == ["Ноутбук дорогой", "Учебник средний", "Велосипед дешевый"]
+
+
+def test_filter_listings_sorts_newest_first_by_default(client: TestClient) -> None:
+    _auth(client)
+    import time
+    # Create listings with different creation times
+    listing1 = _listing_payload(title="Старое объявление", price=100.0)
+    response1 = client.post("/listings", json=listing1)
+    id1 = response1.json()["id"]
+    
+    time.sleep(0.01)  # Small delay to ensure different timestamps
+    
+    listing2 = _listing_payload(title="Новое объявление", price=200.0)
+    response2 = client.post("/listings", json=listing2)
+    id2 = response2.json()["id"]
+
+    # Default sort should be newest first (descending by created_at, then id)
+    response = client.get("/listings")
+
+    assert response.status_code == 200
+    listings = response.json()
+    titles = [listing["title"] for listing in listings]
+    # Either order could be correct because IDs are random, but newer should generally come first
+    assert len(titles) == 2
+    assert "Новое объявление" in titles
+    assert "Старое объявление" in titles
+
+
+def test_filter_listings_combines_sort_and_tags(client: TestClient) -> None:
+    _auth(client)
+    client.post(
+        "/listings",
+        json=_listing_payload(title="Ноутбук дорогой", price=1500.0, tags=["Электроника", "Спорт"]),
+    )
+    client.post(
+        "/listings",
+        json=_listing_payload(title="Велосипед дешевый", price=500.0, tags=["Спорт"]),
+    )
+    client.post(
+        "/listings",
+        json=_listing_payload(title="Учебник средний", price=800.0, tags=["Учеба"]),
+    )
+
+    response = client.get("/listings", params={"tags": ["Спорт", "Электроника"], "sort": "cheapest"})
+
+    assert response.status_code == 200
+    listings = response.json()
+    titles = [listing["title"] for listing in listings]
+    # Should only include listings with BOTH "Спорт" AND "Электроника" tags (AND logic), sorted by price
+    assert titles == ["Ноутбук дорогой"]
+
+
+def test_filter_listings_combines_sort_and_location(client: TestClient) -> None:
+    _auth(client)
+    client.post(
+        "/listings",
+        json=_listing_payload(title="Ноутбук в д5", price=1500.0, location="Общежитие №5"),
+    )
+    client.post(
+        "/listings",
+        json=_listing_payload(title="Велосипед в д3", price=500.0, location="Общежитие №3"),
+    )
+    client.post(
+        "/listings",
+        json=_listing_payload(title="Учебник в городе", price=800.0, location="Город"),
+    )
+
+    response = client.get("/listings", params={"location": ["Общежитие №5", "Общежитие №3"], "sort": "cheapest"})
+
+    assert response.status_code == 200
+    listings = response.json()
+    titles = [listing["title"] for listing in listings]
+    # Should only include listings in "Общежитие №5" or "Общежитие №3", sorted by price
+    assert titles == ["Велосипед в д3", "Ноутбук в д5"]

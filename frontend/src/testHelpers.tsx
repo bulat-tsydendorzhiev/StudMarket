@@ -24,6 +24,10 @@ export function stubFetch(routes: MockRoutes) {
   const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
     const url = new URL(String(input), 'http://localhost')
     const method = init?.method ?? 'GET'
+    
+    // Collect all matching routes and pick the most specific one
+    const matches: Array<{ specificity: number; route: MockRoute }> = []
+    
     for (const [key, route] of Object.entries(routes)) {
       const [routeMethod, routePath] = key.split(' ')
       if (method !== routeMethod) {
@@ -34,20 +38,25 @@ export function stubFetch(routes: MockRoutes) {
         continue
       }
       if (queryPart === undefined) {
-        if (url.search === '') {
-          return Promise.resolve(jsonResponse(route.status, route.body))
-        }
+        // Mock has no query params - matches any request to this path (lowest specificity)
+        matches.push({ specificity: 0, route })
         continue
       }
       const expected = [...new URLSearchParams(queryPart).entries()]
-      const actual = [...url.searchParams.entries()]
-      const queryMatches =
-        expected.length === actual.length &&
-        expected.every(([keyParam, value]) => url.searchParams.get(keyParam) === value)
+      // Partial match: all expected params must be present in actual with same values
+      const queryMatches = expected.every(([keyParam, value]) => url.searchParams.get(keyParam) === value)
       if (queryMatches) {
-        return Promise.resolve(jsonResponse(route.status, route.body))
+        // Specificity = number of expected query params (more params = more specific)
+        matches.push({ specificity: expected.length, route })
       }
     }
+    
+    if (matches.length > 0) {
+      // Pick the most specific match
+      matches.sort((a, b) => b.specificity - a.specificity)
+      return Promise.resolve(jsonResponse(matches[0].route.status, matches[0].route.body))
+    }
+    
     return Promise.resolve(jsonResponse(404))
   })
   vi.stubGlobal('fetch', fetchMock)
