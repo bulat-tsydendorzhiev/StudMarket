@@ -24,6 +24,7 @@ export function stubFetch(routes: MockRoutes) {
   const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
     const url = new URL(String(input), 'http://localhost')
     const method = init?.method ?? 'GET'
+    const pathname = url.pathname.replace(/^\/api/, '')
     
     // Collect all matching routes and pick the most specific one
     const matches: Array<{ specificity: number; route: MockRoute }> = []
@@ -34,7 +35,7 @@ export function stubFetch(routes: MockRoutes) {
         continue
       }
       const [pathPart, queryPart] = routePath.split('?')
-      if (url.pathname !== pathPart) {
+      if (pathname !== pathPart) {
         continue
       }
       if (queryPart === undefined) {

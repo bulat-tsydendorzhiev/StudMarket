@@ -1,4 +1,5 @@
-const API_URL: string = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+export const API_URL: string = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '')
+export const API_PREFIX: string = '/api'
 
 export class ApiError extends Error {
   status: number
@@ -12,7 +13,7 @@ export class ApiError extends Error {
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const isFormData = options.body instanceof FormData
-  const response = await fetch(`${API_URL}${path}`, {
+  const response = await fetch(`${API_URL}${API_PREFIX}${path}`, {
     headers: isFormData
       ? { ...options.headers }
       : { 'Content-Type': 'application/json', ...options.headers },

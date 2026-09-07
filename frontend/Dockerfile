@@ -1,4 +1,4 @@
-FROM docker.io/library/node:22-alpine
+FROM docker.io/library/node:22-alpine AS build
 
 WORKDIR /app
 
@@ -7,6 +7,13 @@ RUN npm install
 
 COPY . .
 
-EXPOSE 5173
+RUN npm run build
 
-CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
+# One-shot build container: produces /app/dist into a shared named volume.
+FROM docker.io/library/node:22-alpine
+
+WORKDIR /app
+
+COPY --from=build /app/dist /app/dist
+
+CMD ["node", "--version"]

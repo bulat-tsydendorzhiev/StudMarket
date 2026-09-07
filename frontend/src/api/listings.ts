@@ -1,4 +1,4 @@
-import { apiClient } from './client'
+import { apiClient, API_PREFIX, API_URL } from './client'
 
 export interface Tag {
   id: string
@@ -99,5 +99,5 @@ export const listingsApi = {
 }
 
 export function imageUrl(url: string): string {
-  return `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}${url}`
+  return `${API_URL}${API_PREFIX}${url}`
 }

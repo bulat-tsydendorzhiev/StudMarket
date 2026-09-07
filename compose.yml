@@ -49,8 +49,6 @@ services:
     depends_on:
       auth-db:
         condition: service_healthy
-    ports:
-      - "8001:8000"
     networks: [backend]
 
   listing-service:
@@ -65,8 +63,6 @@ services:
         condition: service_healthy
     volumes:
       - listing-uploads:/uploads
-    ports:
-      - "8002:8000"
     networks: [backend]
 
   chat-service:
@@ -79,8 +75,6 @@ services:
     depends_on:
       chat-db:
         condition: service_healthy
-    ports:
-      - "8003:8000"
     networks: [backend]
 
   api-gateway:
@@ -91,18 +85,36 @@ services:
       LISTING_SERVICE_URL: http://listing-service:8000
       CHAT_SERVICE_URL: http://chat-service:8000
       CORS_ORIGINS: http://localhost:5173,http://127.0.0.1:5173
-    ports:
-      - "8000:8000"
+    depends_on:
+      - auth-service
+      - listing-service
+      - chat-service
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/health')\""]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks: [backend]
 
   frontend:
     build: ./frontend
-    environment:
-      VITE_API_URL: http://localhost:8000
+    volumes:
+      - frontend-dist:/app/dist
+    restart: "no"
+    networks: [backend]
+
+  nginx:
+    image: docker.io/library/nginx:alpine
     depends_on:
-      - api-gateway
+      api-gateway:
+        condition: service_healthy
+      frontend:
+        condition: service_completed_successfully
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - frontend-dist:/usr/share/nginx/html:ro
     ports:
-      - "5173:5173"
+      - "${NGINX_PORT:-80}:80"
     networks: [backend]
 
 networks:
@@ -111,3 +123,4 @@ networks:
 
 volumes:
   listing-uploads:
+  frontend-dist:
